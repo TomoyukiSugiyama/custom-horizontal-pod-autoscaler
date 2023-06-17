@@ -152,8 +152,6 @@ spec:
                     type: object
                 type: object
               horizontalPodAutoscalerName:
-                description: Foo is an example field of CustomHorizontalPodAutoscaler.
-                  Edit customhorizontalpodautoscaler_types.go to remove/update Foo                         string                                         `json:"foo,omitempty"`
                 type: string
               maxReplicas:
                 format: int32
