@@ -7,4 +7,14 @@ layout:
 - go.kubebuilder.io/v4
 projectName: custom-horizontal-pod-autoscaler
 repo: sample.com/custom-horizontal-pod-autoscaler
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: sample.com
+  group: custom-autoscaling
+  kind: CustomHorizontalPodAutoscaler
+  path: sample.com/custom-horizontal-pod-autoscaler/api/v1
+  version: v1
 version: "3"

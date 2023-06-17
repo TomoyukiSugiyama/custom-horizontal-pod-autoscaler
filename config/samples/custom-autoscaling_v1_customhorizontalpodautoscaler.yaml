@@ -1,0 +1,12 @@
+apiVersion: custom-autoscaling.sample.com/v1
+kind: CustomHorizontalPodAutoscaler
+metadata:
+  labels:
+    app.kubernetes.io/name: customhorizontalpodautoscaler
+    app.kubernetes.io/instance: customhorizontalpodautoscaler-sample
+    app.kubernetes.io/part-of: custom-horizontal-pod-autoscaler
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: custom-horizontal-pod-autoscaler
+  name: customhorizontalpodautoscaler-sample
+spec:
+  # TODO(user): Add fields here

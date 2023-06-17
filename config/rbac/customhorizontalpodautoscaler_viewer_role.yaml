@@ -1,0 +1,27 @@
+# permissions for end users to view customhorizontalpodautoscalers.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: customhorizontalpodautoscaler-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: custom-horizontal-pod-autoscaler
+    app.kubernetes.io/part-of: custom-horizontal-pod-autoscaler
+    app.kubernetes.io/managed-by: kustomize
+  name: customhorizontalpodautoscaler-viewer-role
+rules:
+- apiGroups:
+  - custom-autoscaling.sample.com
+  resources:
+  - customhorizontalpodautoscalers
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - custom-autoscaling.sample.com
+  resources:
+  - customhorizontalpodautoscalers/status
+  verbs:
+  - get
