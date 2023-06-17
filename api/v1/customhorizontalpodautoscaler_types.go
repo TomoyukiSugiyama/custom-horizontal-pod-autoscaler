@@ -17,6 +17,7 @@ limitations under the License.
 package v1
 
 import (
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -29,13 +30,27 @@ type CustomHorizontalPodAutoscalerSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of CustomHorizontalPodAutoscaler. Edit customhorizontalpodautoscaler_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// Foo                         string                                         `json:"foo,omitempty"`
+	HorizontalPodAutoscalerName string                                         `json:"horizontalPodAutoscalerName"`
+	MinReplicas                 *int32                                         `json:"minReplicas"`
+	MinReplicasTraining         *int32                                         `json:"minReplicasTraining"`
+	MaxReplicas                 int32                                          `json:"maxReplicas"`
+	MaxReplicasTraining         int32                                          `json:"maxReplicasTraining"`
+	ScaleTargetRef              autoscalingv2.CrossVersionObjectReference      `json:"scaleTargetRef"`
+	Metrics                     []autoscalingv2.MetricSpec                     `json:"metrics"`
+	Behavior                    *autoscalingv2.HorizontalPodAutoscalerBehavior `json:"behavior"`
 }
 
 // CustomHorizontalPodAutoscalerStatus defines the observed state of CustomHorizontalPodAutoscaler
 type CustomHorizontalPodAutoscalerStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	ObservedGeneration *int64                                           `json:"observedGeneration"`
+	LastScaleTime      *metav1.Time                                     `json:"lastScaleTime"`
+	CurrentReplicas    int32                                            `json:"currentReplicas"`
+	DesiredReplicas    int32                                            `json:"desiredReplicas"`
+	CurrentMetrics     []autoscalingv2.MetricStatus                     `json:"currentMetrics"`
+	Conditions         []autoscalingv2.HorizontalPodAutoscalerCondition `json:"conditions"`
 }
 
 //+kubebuilder:object:root=true
