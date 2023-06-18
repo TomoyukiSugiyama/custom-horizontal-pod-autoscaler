@@ -22,6 +22,7 @@ import (
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/pointer"
@@ -72,6 +73,11 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 		return ctrl.Result{}, nil
 	}
 
+	err = r.reconcileHorizontalPodAutoscaler(ctx, customHPA)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
 	return ctrl.Result{}, nil
 }
 
@@ -86,23 +92,57 @@ func (r *CustomHorizontalPodAutoscalerReconciler) SetupWithManager(mgr ctrl.Mana
 func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscaler(ctx context.Context, customHPA customautoscalingv1.CustomHorizontalPodAutoscaler) error {
 	logger := log.FromContext(ctx)
 	hpaName := customHPA.Name
-	hpa := autoscalingv2apply.HorizontalPodAutoscaler(hpaName, customHPA.Namespace).
-		WithLabels(map[string]string{
-			"app.kubernetes.io/name":       hpaName,
-			"app.kubernetes.io/instance":   customHPA.Name,
-			"app.kubernetes.io/created-by": "custom-horizontal-pod-autoscaler-controller",
-		}).
-		WithSpec(autoscalingv2apply.HorizontalPodAutoscalerSpec().
-			WithMinReplicas(*customHPA.Spec.MinReplicas).
-			WithMaxReplicas(customHPA.Spec.MaxReplicas).
-			WithBehavior(
-				autoscalingv2apply.HorizontalPodAutoscalerBehavior().
-					WithScaleDown(autoscalingv2apply.HPAScalingRules()).
-					WithScaleUp(autoscalingv2apply.HPAScalingRules()),
-			).
-			WithMetrics(autoscalingv2apply.MetricSpec()).
-			WithScaleTargetRef(autoscalingv2apply.CrossVersionObjectReference()),
-		)
+
+	hpa := autoscalingv2.HorizontalPodAutoscaler{
+
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      customHPA.Name,
+			Namespace: customHPA.Namespace,
+			OwnerReferences: []metav1.OwnerReference{
+				*metav1.NewControllerRef(&customHPA, customautoscalingv1.SchemeBuilder.GroupVersion.WithKind("CustomHorizontalPodAutoscaler")),
+			},
+		},
+		Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
+			MinReplicas:    customHPA.Spec.MinReplicas,
+			MaxReplicas:    customHPA.Spec.MaxReplicas,
+			ScaleTargetRef: customHPA.Spec.ScaleTargetRef,
+			Metrics:        customHPA.Spec.Metrics,
+			Behavior:       customHPA.Spec.Behavior.DeepCopy(),
+		},
+	}
+
+	// hpa := autoscalingv2apply.HorizontalPodAutoscaler(hpaName, customHPA.Namespace).
+	// 	WithLabels(map[string]string{
+	// 		"app.kubernetes.io/name":       hpaName,
+	// 		"app.kubernetes.io/instance":   customHPA.Name,
+	// 		"app.kubernetes.io/created-by": "custom-horizontal-pod-autoscaler-controller",
+	// 	}).
+	// 	WithSpec(autoscalingv2apply.HorizontalPodAutoscalerSpec().
+	// 		WithMinReplicas(*customHPA.Spec.MinReplicas).
+	// 		WithMaxReplicas(customHPA.Spec.MaxReplicas).
+	// 		WithBehavior(
+	// 			autoscalingv2apply.HorizontalPodAutoscalerBehavior().
+	// 				WithScaleDown(autoscalingv2apply.HPAScalingRules()).
+	// 				WithScaleUp(autoscalingv2apply.HPAScalingRules()),
+	// 		).
+	// 		WithMetrics(autoscalingv2apply.MetricSpec().
+	// 			WithContainerResource(autoscalingv2apply.ContainerResourceMetricSource().
+	// 				WithContainer(autoscalingv2.SchemeGroupVersion.Group).
+	// 				WithName(*autoscalingv2apply.ContainerResourceMetricSource().Name).
+	// 				WithTarget(autoscalingv2apply.MetricTarget().WithAverageUtilization(*customHPA.Spec.Metrics[0].ContainerResource.Target.AverageUtilization)),
+	// 			).
+	// 			WithExternal(autoscalingv2apply.ExternalMetricSource()).
+	// 			WithObject(autoscalingv2apply.ObjectMetricSource()).
+	// 			WithPods(autoscalingv2apply.PodsMetricSource()).
+	// 			WithResource(autoscalingv2apply.ResourceMetricSource()).
+	// 			WithType(autoscalingv2.ContainerResourceMetricSourceType),
+	// 		).
+	// 		WithScaleTargetRef(autoscalingv2apply.CrossVersionObjectReference().
+	// 			WithAPIVersion(customHPA.Spec.ScaleTargetRef.APIVersion).
+	// 			WithKind(customHPA.Spec.ScaleTargetRef.Kind).
+	// 			WithName(customHPA.Spec.ScaleTargetRef.Name),
+	// 		),
+	// 	)
 
 	obj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(hpa)
 	if err != nil {
