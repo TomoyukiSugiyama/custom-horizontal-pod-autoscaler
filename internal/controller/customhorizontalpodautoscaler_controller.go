@@ -78,7 +78,7 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 		return ctrl.Result{}, err
 	}
 
-	return ctrl.Result{}, nil
+	return r.updateStatus(ctx, customHPA)
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -180,4 +180,25 @@ func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscal
 
 	logger.Info("reconcile HorizontalPodAutoscaler successfully", "name", customHPA.Name)
 	return nil
+}
+
+func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(ctx context.Context, customHPA customautoscalingv1.CustomHorizontalPodAutoscaler) (ctrl.Result, error) {
+	var current autoscalingv2.HorizontalPodAutoscaler
+	err := r.Get(ctx, client.ObjectKey{Namespace: customHPA.Namespace, Name: customHPA.Name}, &current)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	customHPA.Status = customautoscalingv1.CustomHorizontalPodAutoscalerStatus(current.Status)
+	err = r.Status().Update(ctx, &customHPA)
+
+	if customHPA.Spec.MinReplicas != current.Spec.MinReplicas {
+		return ctrl.Result{Requeue: true}, nil
+	}
+
+	if customHPA.Spec.MinReplicas != &current.Spec.MaxReplicas {
+		return ctrl.Result{Requeue: true}, nil
+	}
+
+	return ctrl.Result{}, nil
 }
