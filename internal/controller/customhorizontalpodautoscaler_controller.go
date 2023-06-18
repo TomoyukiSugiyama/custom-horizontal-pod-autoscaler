@@ -59,6 +59,7 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 
 	if err != nil {
 		logger.Error(err, "unable to get CustomHorizontalPodAutoscaler", "name", req.Namespace)
+		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil
