@@ -19,8 +19,14 @@ package controller
 import (
 	"context"
 
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
+	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/pointer"
+
+	autoscalingv2apply "k8s.io/client-go/applyconfigurations/autoscaling/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -78,7 +84,60 @@ func (r *CustomHorizontalPodAutoscalerReconciler) SetupWithManager(mgr ctrl.Mana
 
 // reconcileHorizontalPodAutoscaler is a reconcile function for horizontal pod autoscaling
 func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscaler(ctx context.Context, customHPA customautoscalingv1.CustomHorizontalPodAutoscaler) error {
-	_ = log.FromContext(ctx)
+	logger := log.FromContext(ctx)
+	hpaName := customHPA.Name
+	hpa := autoscalingv2apply.HorizontalPodAutoscaler(hpaName, customHPA.Namespace).
+		WithLabels(map[string]string{
+			"app.kubernetes.io/name":       hpaName,
+			"app.kubernetes.io/instance":   customHPA.Name,
+			"app.kubernetes.io/created-by": "custom-horizontal-pod-autoscaler-controller",
+		}).
+		WithSpec(autoscalingv2apply.HorizontalPodAutoscalerSpec().
+			WithMinReplicas(*customHPA.Spec.MinReplicas).
+			WithMaxReplicas(customHPA.Spec.MaxReplicas).
+			WithBehavior(
+				autoscalingv2apply.HorizontalPodAutoscalerBehavior().
+					WithScaleDown(autoscalingv2apply.HPAScalingRules()).
+					WithScaleUp(autoscalingv2apply.HPAScalingRules()),
+			).
+			WithMetrics(autoscalingv2apply.MetricSpec()).
+			WithScaleTargetRef(autoscalingv2apply.CrossVersionObjectReference()),
+		)
 
+	obj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(hpa)
+	if err != nil {
+		return err
+	}
+
+	patch := &unstructured.Unstructured{
+		Object: obj,
+	}
+
+	var current autoscalingv2.HorizontalPodAutoscaler
+	err = r.Get(ctx, client.ObjectKey{Namespace: customHPA.Namespace, Name: hpaName}, &current)
+	if err != nil && !errors.IsNotFound(err) {
+		return err
+	}
+
+	currentApplyConfig, err := autoscalingv2apply.ExtractHorizontalPodAutoscaler(&current, "custom-horizontal-pod-autoscaler-controller")
+	if err != nil {
+		return err
+	}
+
+	if equality.Semantic.DeepEqual(hpa, currentApplyConfig) {
+		return nil
+	}
+
+	err = r.Patch(ctx, patch, client.Apply, &client.PatchOptions{
+		FieldManager: "custom-horizontal-pod-autoscaler-controller",
+		Force:        pointer.Bool(true),
+	})
+
+	if err != nil {
+		logger.Error(err, "unable to create or update HorizontalPodAutoscaler")
+		return err
+	}
+
+	logger.Info("reconcile HorizontalPodAutoscaler successfully", "name", customHPA.Name)
 	return nil
 }
