@@ -75,3 +75,10 @@ func (r *CustomHorizontalPodAutoscalerReconciler) SetupWithManager(mgr ctrl.Mana
 		For(&customautoscalingv1.CustomHorizontalPodAutoscaler{}).
 		Complete(r)
 }
+
+// reconcileHorizontalPodAutoscaler is a reconcile function for horizontal pod autoscaling
+func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscaler(ctx context.Context, customHPA customautoscalingv1.CustomHorizontalPodAutoscaler) error {
+	_ = log.FromContext(ctx)
+
+	return nil
+}
