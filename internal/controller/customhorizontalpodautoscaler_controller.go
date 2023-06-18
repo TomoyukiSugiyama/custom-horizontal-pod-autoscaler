@@ -93,8 +93,11 @@ func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscal
 	logger := log.FromContext(ctx)
 	hpaName := customHPA.Name
 
-	hpa := autoscalingv2.HorizontalPodAutoscaler{
-
+	hpa := &autoscalingv2.HorizontalPodAutoscaler{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "HorizontalPodAutoscaler",
+			APIVersion: autoscalingv2.SchemeGroupVersion.Identifier(),
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      customHPA.Name,
 			Namespace: customHPA.Namespace,
@@ -110,39 +113,6 @@ func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscal
 			Behavior:       customHPA.Spec.Behavior.DeepCopy(),
 		},
 	}
-
-	// hpa := autoscalingv2apply.HorizontalPodAutoscaler(hpaName, customHPA.Namespace).
-	// 	WithLabels(map[string]string{
-	// 		"app.kubernetes.io/name":       hpaName,
-	// 		"app.kubernetes.io/instance":   customHPA.Name,
-	// 		"app.kubernetes.io/created-by": "custom-horizontal-pod-autoscaler-controller",
-	// 	}).
-	// 	WithSpec(autoscalingv2apply.HorizontalPodAutoscalerSpec().
-	// 		WithMinReplicas(*customHPA.Spec.MinReplicas).
-	// 		WithMaxReplicas(customHPA.Spec.MaxReplicas).
-	// 		WithBehavior(
-	// 			autoscalingv2apply.HorizontalPodAutoscalerBehavior().
-	// 				WithScaleDown(autoscalingv2apply.HPAScalingRules()).
-	// 				WithScaleUp(autoscalingv2apply.HPAScalingRules()),
-	// 		).
-	// 		WithMetrics(autoscalingv2apply.MetricSpec().
-	// 			WithContainerResource(autoscalingv2apply.ContainerResourceMetricSource().
-	// 				WithContainer(autoscalingv2.SchemeGroupVersion.Group).
-	// 				WithName(*autoscalingv2apply.ContainerResourceMetricSource().Name).
-	// 				WithTarget(autoscalingv2apply.MetricTarget().WithAverageUtilization(*customHPA.Spec.Metrics[0].ContainerResource.Target.AverageUtilization)),
-	// 			).
-	// 			WithExternal(autoscalingv2apply.ExternalMetricSource()).
-	// 			WithObject(autoscalingv2apply.ObjectMetricSource()).
-	// 			WithPods(autoscalingv2apply.PodsMetricSource()).
-	// 			WithResource(autoscalingv2apply.ResourceMetricSource()).
-	// 			WithType(autoscalingv2.ContainerResourceMetricSourceType),
-	// 		).
-	// 		WithScaleTargetRef(autoscalingv2apply.CrossVersionObjectReference().
-	// 			WithAPIVersion(customHPA.Spec.ScaleTargetRef.APIVersion).
-	// 			WithKind(customHPA.Spec.ScaleTargetRef.Kind).
-	// 			WithName(customHPA.Spec.ScaleTargetRef.Name),
-	// 		),
-	// 	)
 
 	obj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(hpa)
 	if err != nil {
