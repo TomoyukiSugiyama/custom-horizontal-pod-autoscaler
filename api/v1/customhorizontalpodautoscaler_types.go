@@ -36,7 +36,7 @@ type CustomHorizontalPodAutoscalerSpec struct {
 	MaxReplicasTraining         int32                                          `json:"maxReplicasTraining"`
 	ScaleTargetRef              autoscalingv2.CrossVersionObjectReference      `json:"scaleTargetRef"`
 	Metrics                     []autoscalingv2.MetricSpec                     `json:"metrics"`
-	Behavior                    *autoscalingv2.HorizontalPodAutoscalerBehavior `json:"behavior"`
+	Behavior                    *autoscalingv2.HorizontalPodAutoscalerBehavior `json:"behavior,omitempty"`
 }
 
 // CustomHorizontalPodAutoscalerStatus defines the observed state of CustomHorizontalPodAutoscaler
