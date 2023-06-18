@@ -13,7 +13,7 @@ spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: test-deployment
+    name: sample-deployment
   minReplicas: 2
   maxReplicas: 4
   minReplicasTraining: 5
