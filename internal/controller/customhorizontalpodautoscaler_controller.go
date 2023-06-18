@@ -50,7 +50,6 @@ type CustomHorizontalPodAutoscalerReconciler struct {
 func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	// TODO(user): your logic here
 	var customHPA customautoscalingv1.CustomHorizontalPodAutoscaler
 	err := r.Get(ctx, req.NamespacedName, &customHPA)
 
