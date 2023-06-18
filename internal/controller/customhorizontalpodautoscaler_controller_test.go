@@ -31,14 +31,14 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 
 		hpa := autoscalingv2.HorizontalPodAutoscaler{}
 		Eventually(func() error {
-			return k8sClient.Get(ctx, client.ObjectKey{Namespace: "test", Name: "sample"}, &hpa)
+			return k8sClient.Get(ctx, client.ObjectKey{Namespace: "dummy-namespace", Name: "sample"}, &hpa)
 		}).Should(Succeed())
 		Expect(hpa.Spec.MinReplicas).Should(Equal(pointer.Int32Ptr(1)))
 		Expect(hpa.Spec.MaxReplicas).Should(Equal(int32(5)))
 	})
 
 	BeforeEach(func() {
-		err := k8sClient.DeleteAllOf(ctx, &customautoscalingv1.CustomHorizontalPodAutoscaler{}, client.InNamespace("test"))
+		err := k8sClient.DeleteAllOf(ctx, &customautoscalingv1.CustomHorizontalPodAutoscaler{}, client.InNamespace("dummy-namespace"))
 		Expect(err).NotTo(HaveOccurred())
 
 		time.Sleep(100 * time.Millisecond)
@@ -100,7 +100,7 @@ func newCustomHorizontalPodAutoscaler() *customautoscalingv1.CustomHorizontalPod
 	return &customautoscalingv1.CustomHorizontalPodAutoscaler{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "sample",
-			Namespace: "test",
+			Namespace: "dummy-namespace",
 		},
 		Spec: customautoscalingv1.CustomHorizontalPodAutoscalerSpec{
 			MinReplicas:         &minReplicas,

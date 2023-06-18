@@ -74,7 +74,7 @@ var _ = BeforeSuite(func() {
 	Expect(k8sClient).NotTo(BeNil())
 
 	ns := &corev1.Namespace{}
-	ns.Name = "test"
+	ns.Name = "dummy-namespace"
 	err = k8sClient.Create(context.Background(), ns)
 	Expect(err).NotTo(HaveOccurred())
 })
