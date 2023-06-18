@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -47,9 +48,19 @@ type CustomHorizontalPodAutoscalerReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.4/pkg/reconcile
 func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
 	// TODO(user): your logic here
+	var customHPA customautoscalingv1.CustomHorizontalPodAutoscaler
+	err := r.Get(ctx, req.NamespacedName, &customHPA)
+
+	if errors.IsNotFound(err) {
+		return ctrl.Result{}, nil
+	}
+
+	if err != nil {
+		logger.Error(err, "unable to get CustomHorizontalPodAutoscaler", "name", req.Namespace)
+	}
 
 	return ctrl.Result{}, nil
 }
