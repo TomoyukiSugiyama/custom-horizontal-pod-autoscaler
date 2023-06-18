@@ -650,7 +650,6 @@ spec:
                 - name
                 type: object
             required:
-            - behavior
             - horizontalPodAutoscalerName
             - maxReplicas
             - maxReplicasTraining

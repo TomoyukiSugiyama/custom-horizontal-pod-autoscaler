@@ -19,7 +19,15 @@ package controller
 import (
 	"context"
 
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
+	"k8s.io/apimachinery/pkg/api/equality"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/pointer"
+
+	autoscalingv2apply "k8s.io/client-go/applyconfigurations/autoscaling/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -47,11 +55,30 @@ type CustomHorizontalPodAutoscalerReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.4/pkg/reconcile
 func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
-	// TODO(user): your logic here
+	var customHPA customautoscalingv1.CustomHorizontalPodAutoscaler
+	err := r.Get(ctx, req.NamespacedName, &customHPA)
 
-	return ctrl.Result{}, nil
+	if errors.IsNotFound(err) {
+		return ctrl.Result{}, nil
+	}
+
+	if err != nil {
+		logger.Error(err, "unable to get CustomHorizontalPodAutoscaler", "name", req.Namespace)
+		return ctrl.Result{}, err
+	}
+
+	if !customHPA.ObjectMeta.DeletionTimestamp.IsZero() {
+		return ctrl.Result{}, nil
+	}
+
+	err = r.reconcileHorizontalPodAutoscaler(ctx, customHPA)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	return r.updateStatus(ctx, customHPA)
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -59,4 +86,89 @@ func (r *CustomHorizontalPodAutoscalerReconciler) SetupWithManager(mgr ctrl.Mana
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&customautoscalingv1.CustomHorizontalPodAutoscaler{}).
 		Complete(r)
+}
+
+// reconcileHorizontalPodAutoscaler is a reconcile function for horizontal pod autoscaling
+func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscaler(ctx context.Context, customHPA customautoscalingv1.CustomHorizontalPodAutoscaler) error {
+	logger := log.FromContext(ctx)
+	hpaName := customHPA.Name
+
+	hpa := &autoscalingv2.HorizontalPodAutoscaler{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "HorizontalPodAutoscaler",
+			APIVersion: autoscalingv2.SchemeGroupVersion.Identifier(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      customHPA.Name,
+			Namespace: customHPA.Namespace,
+			OwnerReferences: []metav1.OwnerReference{
+				*metav1.NewControllerRef(&customHPA, customautoscalingv1.SchemeBuilder.GroupVersion.WithKind("CustomHorizontalPodAutoscaler")),
+			},
+		},
+		Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
+			MinReplicas:    customHPA.Spec.MinReplicas,
+			MaxReplicas:    customHPA.Spec.MaxReplicas,
+			ScaleTargetRef: customHPA.Spec.ScaleTargetRef,
+			Metrics:        customHPA.Spec.Metrics,
+			Behavior:       customHPA.Spec.Behavior.DeepCopy(),
+		},
+	}
+
+	obj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(hpa)
+	if err != nil {
+		return err
+	}
+
+	patch := &unstructured.Unstructured{
+		Object: obj,
+	}
+
+	var current autoscalingv2.HorizontalPodAutoscaler
+	err = r.Get(ctx, client.ObjectKey{Namespace: customHPA.Namespace, Name: hpaName}, &current)
+	if err != nil && !errors.IsNotFound(err) {
+		return err
+	}
+
+	currentApplyConfig, err := autoscalingv2apply.ExtractHorizontalPodAutoscaler(&current, "custom-horizontal-pod-autoscaler-controller")
+	if err != nil {
+		return err
+	}
+
+	if equality.Semantic.DeepEqual(hpa, currentApplyConfig) {
+		return nil
+	}
+
+	err = r.Patch(ctx, patch, client.Apply, &client.PatchOptions{
+		FieldManager: "custom-horizontal-pod-autoscaler-controller",
+		Force:        pointer.Bool(true),
+	})
+
+	if err != nil {
+		logger.Error(err, "unable to create or update HorizontalPodAutoscaler")
+		return err
+	}
+
+	logger.Info("reconcile HorizontalPodAutoscaler successfully", "name", customHPA.Name)
+	return nil
+}
+
+func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(ctx context.Context, customHPA customautoscalingv1.CustomHorizontalPodAutoscaler) (ctrl.Result, error) {
+	var current autoscalingv2.HorizontalPodAutoscaler
+	err := r.Get(ctx, client.ObjectKey{Namespace: customHPA.Namespace, Name: customHPA.Name}, &current)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	customHPA.Status = customautoscalingv1.CustomHorizontalPodAutoscalerStatus(current.Status)
+	err = r.Status().Update(ctx, &customHPA)
+
+	if customHPA.Spec.MinReplicas != current.Spec.MinReplicas {
+		return ctrl.Result{Requeue: true}, nil
+	}
+
+	if customHPA.Spec.MinReplicas != &current.Spec.MaxReplicas {
+		return ctrl.Result{Requeue: true}, nil
+	}
+
+	return ctrl.Result{}, nil
 }
