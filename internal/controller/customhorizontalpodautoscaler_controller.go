@@ -62,6 +62,10 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 		return ctrl.Result{}, err
 	}
 
+	if !customHPA.ObjectMeta.DeletionTimestamp.IsZero() {
+		return ctrl.Result{}, nil
+	}
+
 	return ctrl.Result{}, nil
 }
 
