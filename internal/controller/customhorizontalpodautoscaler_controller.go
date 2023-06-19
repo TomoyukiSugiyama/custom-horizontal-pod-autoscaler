@@ -166,7 +166,7 @@ func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(ctx context.Conte
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	if customHPA.Spec.MinReplicas != &current.Spec.MaxReplicas {
+	if customHPA.Spec.MaxReplicas != current.Spec.MaxReplicas {
 		return ctrl.Result{Requeue: true}, nil
 	}
 
