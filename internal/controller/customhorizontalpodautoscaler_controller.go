@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
 
 	autoscalingv2apply "k8s.io/client-go/applyconfigurations/autoscaling/v2"
@@ -33,12 +34,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
+	jobpkg "sample.com/custom-horizontal-pod-autoscaler/internal/job"
 )
 
 // CustomHorizontalPodAutoscalerReconciler reconciles a CustomHorizontalPodAutoscaler object
 type CustomHorizontalPodAutoscalerReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
+
+	jobClient map[types.NamespacedName]jobpkg.JobClient
 }
 
 //+kubebuilder:rbac:groups=custom-autoscaling.sample.com,resources=customhorizontalpodautoscalers,verbs=get;list;watch;create;update;patch;delete
@@ -77,6 +81,8 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 	if err != nil {
 		return ctrl.Result{}, err
 	}
+
+	r.jobClient[req.NamespacedName].Start(ctx)
 
 	return r.updateStatus(ctx, customHPA)
 }

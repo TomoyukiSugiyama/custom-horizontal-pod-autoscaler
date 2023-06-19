@@ -1,4 +1,4 @@
-package controller
+package job
 
 import (
 	"context"
@@ -8,15 +8,18 @@ import (
 
 	"github.com/prometheus/client_golang/api"
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 type JobClient interface {
-	Start()
+	Start(ctx context.Context)
 	Stop()
 }
 
 type jobClient struct {
-	api v1.API
+	api      v1.API
+	interval time.Duration
+	stopCh   chan struct{}
 }
 
 func NewClient() (JobClient, error) {
@@ -33,7 +36,7 @@ func NewClient() (JobClient, error) {
 	return c, nil
 }
 
-func (c *jobClient) Start() {
+func (c *jobClient) getTemporaryScaleMetrics() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	query := "temporary_scale"
@@ -51,6 +54,24 @@ func (c *jobClient) Start() {
 	fmt.Printf("Res : \n %v\n", resQueryRange)
 }
 
-func (c *jobClient) Stop() {
+func (c *jobClient) Start(ctx context.Context) {
+	logger := log.FromContext(ctx)
+	logger.Info("start job")
 
+	ticker := time.NewTicker(c.interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			c.getTemporaryScaleMetrics()
+		case <-c.stopCh:
+			logger.Info("received stop signal")
+			return
+		}
+	}
+}
+
+func (c *jobClient) Stop() {
+	close(c.stopCh)
 }
