@@ -42,7 +42,7 @@ type CustomHorizontalPodAutoscalerReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 
-	jobClient map[types.NamespacedName]jobpkg.JobClient
+	jobClients map[types.NamespacedName]jobpkg.JobClient
 }
 
 //+kubebuilder:rbac:groups=custom-autoscaling.sample.com,resources=customhorizontalpodautoscalers,verbs=get;list;watch;create;update;patch;delete
@@ -82,7 +82,14 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 		return ctrl.Result{}, err
 	}
 
-	r.jobClient[req.NamespacedName].Start(ctx)
+	jobClient := r.jobClients[req.NamespacedName]
+
+	jobClient, err = jobpkg.New()
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	go jobClient.Start(ctx)
+	// r.jobClient[req.NamespacedName].Start(ctx)
 
 	return r.updateStatus(ctx, customHPA)
 }

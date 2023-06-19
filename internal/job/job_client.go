@@ -22,7 +22,7 @@ type jobClient struct {
 	stopCh   chan struct{}
 }
 
-func NewClient() (JobClient, error) {
+func New() (JobClient, error) {
 
 	client, err := api.NewClient(api.Config{Address: "http://localhost:9090"})
 
@@ -31,12 +31,14 @@ func NewClient() (JobClient, error) {
 	}
 	api := v1.NewAPI(client)
 
-	c := &jobClient{api: api}
-
-	return c, nil
+	return &jobClient{
+		api:      api,
+		interval: 20 * time.Second,
+	}, nil
 }
 
-func (c *jobClient) getTemporaryScaleMetrics() {
+func (c *jobClient) getTemporaryScaleMetrics(ctx context.Context) {
+	logger := log.FromContext(ctx)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	query := "temporary_scale"
@@ -50,8 +52,7 @@ func (c *jobClient) getTemporaryScaleMetrics() {
 	if len(warning) > 0 {
 		fmt.Printf("err get query range %v", warning)
 	}
-
-	fmt.Printf("Res : \n %v\n", resQueryRange)
+	logger.Info("Res : \n %v \n", resQueryRange)
 }
 
 func (c *jobClient) Start(ctx context.Context) {
@@ -64,7 +65,7 @@ func (c *jobClient) Start(ctx context.Context) {
 	for {
 		select {
 		case <-ticker.C:
-			c.getTemporaryScaleMetrics()
+			c.getTemporaryScaleMetrics(ctx)
 		case <-c.stopCh:
 			logger.Info("received stop signal")
 			return
