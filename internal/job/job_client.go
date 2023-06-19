@@ -22,7 +22,9 @@ type jobClient struct {
 	stopCh   chan struct{}
 }
 
-func New() (JobClient, error) {
+type Option func(*jobClient)
+
+func New(opts ...Option) (JobClient, error) {
 
 	client, err := api.NewClient(api.Config{Address: "http://localhost:9090"})
 
@@ -31,10 +33,22 @@ func New() (JobClient, error) {
 	}
 	api := v1.NewAPI(client)
 
-	return &jobClient{
+	j := &jobClient{
 		api:      api,
 		interval: 20 * time.Second,
-	}, nil
+	}
+
+	for _, opt := range opts {
+		opt(j)
+	}
+
+	return j, nil
+}
+
+func WithInterval(interval time.Duration) Option {
+	return func(j *jobClient) {
+		j.interval = interval
+	}
 }
 
 func (c *jobClient) getTemporaryScaleMetrics(ctx context.Context) {
@@ -43,7 +57,7 @@ func (c *jobClient) getTemporaryScaleMetrics(ctx context.Context) {
 	defer cancel()
 	query := "temporary_scale"
 	now := time.Now()
-	rangeParam := v1.Range{Start: now.Add(-time.Hour), End: now, Step: 60 * time.Second}
+	rangeParam := v1.Range{Start: now.Add(-time.Hour), End: now, Step: c.interval}
 	resQueryRange, warning, err := c.api.QueryRange(ctx, query, rangeParam)
 	if err != nil {
 		fmt.Printf("err : %s", err)
@@ -57,7 +71,8 @@ func (c *jobClient) getTemporaryScaleMetrics(ctx context.Context) {
 
 func (c *jobClient) Start(ctx context.Context) {
 	logger := log.FromContext(ctx)
-	logger.Info("start job")
+	logger.Info("starting job")
+	defer logger.Info("shut down job")
 
 	ticker := time.NewTicker(c.interval)
 	defer ticker.Stop()

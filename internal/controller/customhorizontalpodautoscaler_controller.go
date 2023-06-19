@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"time"
 
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -84,12 +85,12 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 
 	jobClient := r.jobClients[req.NamespacedName]
 
-	jobClient, err = jobpkg.New()
+	jobClient, err = jobpkg.New(jobpkg.WithInterval(20 * time.Second))
+
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 	go jobClient.Start(ctx)
-	// r.jobClient[req.NamespacedName].Start(ctx)
 
 	return r.updateStatus(ctx, customHPA)
 }
