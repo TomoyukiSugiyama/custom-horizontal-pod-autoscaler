@@ -1,5 +1,5 @@
 ## Append samples of your project ##
 resources:
 - deployment.yaml
-- custom-autoscaling_v1alpha1_customhorizontalpodautoscaler.yaml
+- custom-autoscaling_v1_customhorizontalpodautoscaler.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples
