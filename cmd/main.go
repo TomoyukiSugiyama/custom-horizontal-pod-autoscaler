@@ -89,6 +89,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	client, err := controller.NewClient()
+	client.Start()
+	// mertics, err := controller.New(context.TODO())
+	// mertics.Start()
+
 	if err = (&controller.CustomHorizontalPodAutoscalerReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
