@@ -2,8 +2,6 @@ package job
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"time"
 
 	"github.com/prometheus/client_golang/api"
@@ -27,7 +25,6 @@ type Option func(*jobClient)
 func New(opts ...Option) (JobClient, error) {
 
 	client, err := api.NewClient(api.Config{Address: "http://localhost:9090"})
-
 	if err != nil {
 		return nil, err
 	}
@@ -36,6 +33,7 @@ func New(opts ...Option) (JobClient, error) {
 	j := &jobClient{
 		api:      api,
 		interval: 30 * time.Second,
+		stopCh:   make(chan struct{}),
 	}
 
 	for _, opt := range opts {
@@ -60,11 +58,11 @@ func (j *jobClient) getTemporaryScaleMetrics(ctx context.Context) {
 	rangeParam := v1.Range{Start: now.Add(-time.Hour), End: now, Step: j.interval}
 	_, warning, err := j.api.QueryRange(ctx, query, rangeParam)
 	if err != nil {
-		fmt.Printf("err : %s", err)
-		os.Exit(1)
+		logger.Error(err, "unable to get temporary scale metrics")
+		return
 	}
 	if len(warning) > 0 {
-		fmt.Printf("err get query range %v", warning)
+		logger.Info("get wornings", "worning", warning)
 	}
 	logger.Info("get metrics")
 }
@@ -80,7 +78,7 @@ func (j *jobClient) Start(ctx context.Context) {
 	for {
 		select {
 		case <-ticker.C:
-			logger.Info("scheduler tick recieved")
+			logger.Info("received scheduler tick")
 			ctx = context.Background()
 			j.getTemporaryScaleMetrics(ctx)
 		case <-j.stopCh:
