@@ -2,10 +2,13 @@ package job
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/prometheus/client_golang/api"
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/promql/parser"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -15,15 +18,24 @@ type JobClient interface {
 }
 
 type jobClient struct {
-	api      v1.API
-	interval time.Duration
-	stopCh   chan struct{}
+	api            v1.API
+	interval       time.Duration
+	stopCh         chan struct{}
+	query          string
+	temporaryScale temporaryScale
+}
+
+type temporaryScale struct {
+	duration string
+	jobType  string
+	value    string
 }
 
 type Option func(*jobClient)
 
 func New(opts ...Option) (JobClient, error) {
 
+	// TODO: Need to set api address from main.
 	client, err := api.NewClient(api.Config{Address: "http://localhost:9090"})
 	if err != nil {
 		return nil, err
@@ -34,6 +46,7 @@ func New(opts ...Option) (JobClient, error) {
 		api:      api,
 		interval: 30 * time.Second,
 		stopCh:   make(chan struct{}),
+		query:    "temporary_scale",
 	}
 
 	for _, opt := range opts {
@@ -49,14 +62,17 @@ func WithInterval(interval time.Duration) Option {
 	}
 }
 
+func WithQuery(query string) Option {
+	return func(j *jobClient) {
+		j.query = query
+	}
+}
+
 func (j *jobClient) getTemporaryScaleMetrics(ctx context.Context) {
 	logger := log.FromContext(ctx)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	query := "temporary_scale"
-	now := time.Now()
-	rangeParam := v1.Range{Start: now.Add(-time.Hour), End: now, Step: j.interval}
-	_, warning, err := j.api.QueryRange(ctx, query, rangeParam)
+	queryResult, warning, err := j.api.Query(ctx, j.query, time.Now())
 	if err != nil {
 		logger.Error(err, "unable to get temporary scale metrics")
 		return
@@ -64,7 +80,29 @@ func (j *jobClient) getTemporaryScaleMetrics(ctx context.Context) {
 	if len(warning) > 0 {
 		logger.Info("get wornings", "worning", warning)
 	}
-	logger.Info("get metrics")
+
+	// ref: https://github.com/prometheus/client_golang/issues/1011
+	j.perseMetrics(queryResult.(model.Vector))
+	logger.Info(
+		"get metrics parse",
+		"duration", j.temporaryScale.duration,
+		"type", j.temporaryScale.jobType,
+		"value", j.temporaryScale.value,
+	)
+}
+
+func (j *jobClient) perseMetrics(samples model.Vector) error {
+	if len(samples) != 1 {
+		return errors.New("multiple sample")
+	}
+	j.temporaryScale.value = samples[0].Value.String()
+	metrics, err := parser.ParseMetric(samples[0].Metric.String())
+	if err != nil {
+		return err
+	}
+	j.temporaryScale.duration = metrics.Map()["duration"]
+	j.temporaryScale.jobType = metrics.Map()["type"]
+	return nil
 }
 
 func (j *jobClient) Start(ctx context.Context) {
