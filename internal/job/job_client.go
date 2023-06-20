@@ -9,6 +9,7 @@ import (
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/promql/parser"
+	apiv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -18,11 +19,12 @@ type JobClient interface {
 }
 
 type jobClient struct {
-	api            v1.API
-	interval       time.Duration
-	stopCh         chan struct{}
-	query          string
-	temporaryScale temporaryScale
+	api                   v1.API
+	interval              time.Duration
+	stopCh                chan struct{}
+	query                 string
+	temporaryScale        temporaryScale
+	temporaryScaleMetrics []apiv1.TemporaryScaleMetricSpec
 }
 
 type temporaryScale struct {
@@ -68,6 +70,12 @@ func WithQuery(query string) Option {
 	}
 }
 
+func WithTemporaryScaleMetrics(temporaryScaleMetrics []apiv1.TemporaryScaleMetricSpec) Option {
+	return func(j *jobClient) {
+		j.temporaryScaleMetrics = temporaryScaleMetrics
+	}
+}
+
 func (j *jobClient) getTemporaryScaleMetrics(ctx context.Context) {
 	logger := log.FromContext(ctx)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -89,6 +97,17 @@ func (j *jobClient) getTemporaryScaleMetrics(ctx context.Context) {
 		"type", j.temporaryScale.jobType,
 		"value", j.temporaryScale.value,
 	)
+
+	for _, metric := range j.temporaryScaleMetrics {
+		logger.Info(
+			"customHPA settings",
+			"duration", metric.Duration,
+			"type", metric.Type,
+			"minReplicas", metric.MinReplicas,
+			"macReplicas", metric.MaxReplicas,
+		)
+
+	}
 }
 
 func (j *jobClient) perseMetrics(samples model.Vector) error {

@@ -95,7 +95,10 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 
 	if !jobClientExists {
 		// TODO: Need to set interval from main.
-		jobClient, err = jobpkg.New(jobpkg.WithInterval(30 * time.Second))
+		jobClient, err = jobpkg.New(
+			jobpkg.WithInterval(30*time.Second),
+			jobpkg.WithTemporaryScaleMetrics(customHPA.Spec.TemporaryScaleMetrics),
+		)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
