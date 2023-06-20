@@ -18,6 +18,8 @@ package controller
 
 import (
 	"context"
+	"sync"
+	"time"
 
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -25,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
 
 	autoscalingv2apply "k8s.io/client-go/applyconfigurations/autoscaling/v2"
@@ -33,17 +36,31 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
+	jobpkg "sample.com/custom-horizontal-pod-autoscaler/internal/job"
 )
 
 // CustomHorizontalPodAutoscalerReconciler reconciles a CustomHorizontalPodAutoscaler object
 type CustomHorizontalPodAutoscalerReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
+
+	jobClients map[types.NamespacedName]jobpkg.JobClient
+
+	mu sync.RWMutex
 }
 
 //+kubebuilder:rbac:groups=custom-autoscaling.sample.com,resources=customhorizontalpodautoscalers,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=custom-autoscaling.sample.com,resources=customhorizontalpodautoscalers/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=custom-autoscaling.sample.com,resources=customhorizontalpodautoscalers/finalizers,verbs=update
+
+func NewReconcile(Client client.Client, Scheme *runtime.Scheme) *CustomHorizontalPodAutoscalerReconciler {
+
+	return &CustomHorizontalPodAutoscalerReconciler{
+		Client:     Client,
+		Scheme:     Scheme,
+		jobClients: make(map[types.NamespacedName]jobpkg.JobClient),
+	}
+}
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -56,6 +73,9 @@ type CustomHorizontalPodAutoscalerReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.4/pkg/reconcile
 func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
+	r.mu.RLock()
+	jobClient, jobClientExists := r.jobClients[req.NamespacedName]
+	r.mu.RUnlock()
 
 	var customHPA customautoscalingv1.CustomHorizontalPodAutoscaler
 	err := r.Get(ctx, req.NamespacedName, &customHPA)
@@ -65,12 +85,25 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 	}
 
 	if err != nil {
-		logger.Error(err, "unable to get CustomHorizontalPodAutoscaler", "name", req.Namespace)
+		logger.Error(err, "unable to get CustomHorizontalPodAutoscaler")
 		return ctrl.Result{}, err
 	}
 
 	if !customHPA.ObjectMeta.DeletionTimestamp.IsZero() {
 		return ctrl.Result{}, nil
+	}
+
+	if !jobClientExists {
+		// TODO: Need to set interval from main.
+		jobClient, err = jobpkg.New(jobpkg.WithInterval(30 * time.Second))
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+		go jobClient.Start(ctx)
+		r.mu.Lock()
+		r.jobClients[req.NamespacedName] = jobClient
+		r.mu.Unlock()
+		logger.Info("create jobClient successfully")
 	}
 
 	err = r.reconcileHorizontalPodAutoscaler(ctx, customHPA)
@@ -79,13 +112,6 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 	}
 
 	return r.updateStatus(ctx, customHPA)
-}
-
-// SetupWithManager sets up the controller with the Manager.
-func (r *CustomHorizontalPodAutoscalerReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&customautoscalingv1.CustomHorizontalPodAutoscaler{}).
-		Complete(r)
 }
 
 // reconcileHorizontalPodAutoscaler is a reconcile function for horizontal pod autoscaling
@@ -171,4 +197,11 @@ func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(ctx context.Conte
 	}
 
 	return ctrl.Result{}, nil
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *CustomHorizontalPodAutoscalerReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&customautoscalingv1.CustomHorizontalPodAutoscaler{}).
+		Complete(r)
 }

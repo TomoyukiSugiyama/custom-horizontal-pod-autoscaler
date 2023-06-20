@@ -48,10 +48,7 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 		})
 		Expect(err).NotTo(HaveOccurred())
 
-		reconciler := CustomHorizontalPodAutoscalerReconciler{
-			Client: k8sClient,
-			Scheme: scheme.Scheme,
-		}
+		reconciler := NewReconcile(k8sClient, scheme.Scheme)
 
 		err = reconciler.SetupWithManager(mgr)
 		Expect(err).NotTo(HaveOccurred())
