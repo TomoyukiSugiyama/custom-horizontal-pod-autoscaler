@@ -76,7 +76,7 @@ func (j *jobClient) getTemporaryScaleMetrics(ctx context.Context) {
 
 	// ref: https://github.com/prometheus/client_golang/issues/1011
 	j.perseMetrics(queryResult.(model.Vector))
-	logger.Info("get metrics parse", "duration", j.ts.duration, "type", j.ts.jobType)
+	logger.Info("get metrics parse", "duration", j.ts.duration, "type", j.ts.jobType, "value", j.ts.value)
 }
 
 func (j *jobClient) perseMetrics(samples model.Vector) error {
