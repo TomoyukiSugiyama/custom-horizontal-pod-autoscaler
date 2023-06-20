@@ -35,7 +35,7 @@ func New(opts ...Option) (JobClient, error) {
 
 	j := &jobClient{
 		api:      api,
-		interval: 20 * time.Second,
+		interval: 30 * time.Second,
 	}
 
 	for _, opt := range opts {
@@ -58,7 +58,7 @@ func (c *jobClient) getTemporaryScaleMetrics(ctx context.Context) {
 	query := "temporary_scale"
 	now := time.Now()
 	rangeParam := v1.Range{Start: now.Add(-time.Hour), End: now, Step: c.interval}
-	resQueryRange, warning, err := c.api.QueryRange(ctx, query, rangeParam)
+	_, warning, err := c.api.QueryRange(ctx, query, rangeParam)
 	if err != nil {
 		fmt.Printf("err : %s", err)
 		os.Exit(1)
@@ -66,7 +66,7 @@ func (c *jobClient) getTemporaryScaleMetrics(ctx context.Context) {
 	if len(warning) > 0 {
 		fmt.Printf("err get query range %v", warning)
 	}
-	logger.Info("Res : \n %v \n", resQueryRange)
+	logger.Info("get metrics")
 }
 
 func (c *jobClient) Start(ctx context.Context) {
@@ -80,6 +80,8 @@ func (c *jobClient) Start(ctx context.Context) {
 	for {
 		select {
 		case <-ticker.C:
+			logger.Info("scheduler tick recieved")
+			ctx = context.Background()
 			c.getTemporaryScaleMetrics(ctx)
 		case <-c.stopCh:
 			logger.Info("received stop signal")
