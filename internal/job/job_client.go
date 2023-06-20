@@ -18,10 +18,11 @@ type JobClient interface {
 }
 
 type jobClient struct {
-	api      v1.API
-	interval time.Duration
-	stopCh   chan struct{}
-	ts       temporaryScale
+	api            v1.API
+	interval       time.Duration
+	stopCh         chan struct{}
+	query          string
+	temporaryScale temporaryScale
 }
 
 type temporaryScale struct {
@@ -45,6 +46,7 @@ func New(opts ...Option) (JobClient, error) {
 		api:      api,
 		interval: 30 * time.Second,
 		stopCh:   make(chan struct{}),
+		query:    "temporary_scale",
 	}
 
 	for _, opt := range opts {
@@ -60,12 +62,17 @@ func WithInterval(interval time.Duration) Option {
 	}
 }
 
+func WithQuery(query string) Option {
+	return func(j *jobClient) {
+		j.query = query
+	}
+}
+
 func (j *jobClient) getTemporaryScaleMetrics(ctx context.Context) {
 	logger := log.FromContext(ctx)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	query := "temporary_scale"
-	queryResult, warning, err := j.api.Query(ctx, query, time.Now())
+	queryResult, warning, err := j.api.Query(ctx, j.query, time.Now())
 	if err != nil {
 		logger.Error(err, "unable to get temporary scale metrics")
 		return
@@ -76,20 +83,25 @@ func (j *jobClient) getTemporaryScaleMetrics(ctx context.Context) {
 
 	// ref: https://github.com/prometheus/client_golang/issues/1011
 	j.perseMetrics(queryResult.(model.Vector))
-	logger.Info("get metrics parse", "duration", j.ts.duration, "type", j.ts.jobType, "value", j.ts.value)
+	logger.Info(
+		"get metrics parse",
+		"duration", j.temporaryScale.duration,
+		"type", j.temporaryScale.jobType,
+		"value", j.temporaryScale.value,
+	)
 }
 
 func (j *jobClient) perseMetrics(samples model.Vector) error {
 	if len(samples) != 1 {
 		return errors.New("multiple sample")
 	}
-	j.ts.value = samples[0].Value.String()
+	j.temporaryScale.value = samples[0].Value.String()
 	metrics, err := parser.ParseMetric(samples[0].Metric.String())
 	if err != nil {
 		return err
 	}
-	j.ts.duration = metrics.Map()["duration"]
-	j.ts.jobType = metrics.Map()["type"]
+	j.temporaryScale.duration = metrics.Map()["duration"]
+	j.temporaryScale.jobType = metrics.Map()["type"]
 	return nil
 }
 
