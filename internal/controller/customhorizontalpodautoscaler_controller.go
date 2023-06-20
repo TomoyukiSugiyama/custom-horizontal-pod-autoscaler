@@ -82,7 +82,7 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 	}
 
 	if err != nil {
-		logger.Error(err, "unable to get CustomHorizontalPodAutoscaler", "name", req.Namespace)
+		logger.Error(err, "unable to get CustomHorizontalPodAutoscaler")
 		return ctrl.Result{}, err
 	}
 
@@ -95,7 +95,9 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 		return ctrl.Result{}, err
 	}
 
+	r.mu.RLock()
 	jobClient, jobClientExists := r.jobClients[req.NamespacedName]
+	r.mu.RUnlock()
 
 	if !jobClientExists {
 		jobClient, err = jobpkg.New(jobpkg.WithInterval(30 * time.Second))
@@ -104,10 +106,9 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 		}
 		go jobClient.Start(ctx)
 		r.mu.Lock()
-		jobClientExists = true
-		//logger.Info("jobClient %s", req.NamespacedName)
 		r.jobClients[req.NamespacedName] = jobClient
 		r.mu.Unlock()
+		logger.Info("create jobClient successfully")
 	}
 
 	return r.updateStatus(ctx, customHPA)
