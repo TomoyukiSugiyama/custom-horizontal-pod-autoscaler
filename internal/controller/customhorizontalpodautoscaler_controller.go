@@ -73,6 +73,9 @@ func NewReconcile(Client client.Client, Scheme *runtime.Scheme) *CustomHorizonta
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.4/pkg/reconcile
 func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
+	r.mu.RLock()
+	jobClient, jobClientExists := r.jobClients[req.NamespacedName]
+	r.mu.RUnlock()
 
 	var customHPA customautoscalingv1.CustomHorizontalPodAutoscaler
 	err := r.Get(ctx, req.NamespacedName, &customHPA)
@@ -90,16 +93,8 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 		return ctrl.Result{}, nil
 	}
 
-	err = r.reconcileHorizontalPodAutoscaler(ctx, customHPA)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
-	r.mu.RLock()
-	jobClient, jobClientExists := r.jobClients[req.NamespacedName]
-	r.mu.RUnlock()
-
 	if !jobClientExists {
+		// TODO: Need to set interval from main.
 		jobClient, err = jobpkg.New(jobpkg.WithInterval(30 * time.Second))
 		if err != nil {
 			return ctrl.Result{}, err
@@ -111,14 +106,12 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 		logger.Info("create jobClient successfully")
 	}
 
-	return r.updateStatus(ctx, customHPA)
-}
+	err = r.reconcileHorizontalPodAutoscaler(ctx, customHPA)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
 
-// SetupWithManager sets up the controller with the Manager.
-func (r *CustomHorizontalPodAutoscalerReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&customautoscalingv1.CustomHorizontalPodAutoscaler{}).
-		Complete(r)
+	return r.updateStatus(ctx, customHPA)
 }
 
 // reconcileHorizontalPodAutoscaler is a reconcile function for horizontal pod autoscaling
@@ -204,4 +197,11 @@ func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(ctx context.Conte
 	}
 
 	return ctrl.Result{}, nil
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *CustomHorizontalPodAutoscalerReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&customautoscalingv1.CustomHorizontalPodAutoscaler{}).
+		Complete(r)
 }
