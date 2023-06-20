@@ -93,7 +93,7 @@ func (j *jobClient) getTemporaryScaleMetrics(ctx context.Context) {
 
 	for _, queryResult := range j.queryResults {
 		logger.Info(
-			"get metrics parse",
+			"parse query result",
 			"duration", queryResult.duration,
 			"type", queryResult.jobType,
 			"value", queryResult.value,
