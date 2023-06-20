@@ -51,14 +51,14 @@ func WithInterval(interval time.Duration) Option {
 	}
 }
 
-func (c *jobClient) getTemporaryScaleMetrics(ctx context.Context) {
+func (j *jobClient) getTemporaryScaleMetrics(ctx context.Context) {
 	logger := log.FromContext(ctx)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	query := "temporary_scale"
 	now := time.Now()
-	rangeParam := v1.Range{Start: now.Add(-time.Hour), End: now, Step: c.interval}
-	_, warning, err := c.api.QueryRange(ctx, query, rangeParam)
+	rangeParam := v1.Range{Start: now.Add(-time.Hour), End: now, Step: j.interval}
+	_, warning, err := j.api.QueryRange(ctx, query, rangeParam)
 	if err != nil {
 		fmt.Printf("err : %s", err)
 		os.Exit(1)
@@ -69,12 +69,12 @@ func (c *jobClient) getTemporaryScaleMetrics(ctx context.Context) {
 	logger.Info("get metrics")
 }
 
-func (c *jobClient) Start(ctx context.Context) {
+func (j *jobClient) Start(ctx context.Context) {
 	logger := log.FromContext(ctx)
 	logger.Info("starting job")
 	defer logger.Info("shut down job")
 
-	ticker := time.NewTicker(c.interval)
+	ticker := time.NewTicker(j.interval)
 	defer ticker.Stop()
 
 	for {
@@ -82,8 +82,8 @@ func (c *jobClient) Start(ctx context.Context) {
 		case <-ticker.C:
 			logger.Info("scheduler tick recieved")
 			ctx = context.Background()
-			c.getTemporaryScaleMetrics(ctx)
-		case <-c.stopCh:
+			j.getTemporaryScaleMetrics(ctx)
+		case <-j.stopCh:
 			logger.Info("received stop signal")
 			return
 		}
