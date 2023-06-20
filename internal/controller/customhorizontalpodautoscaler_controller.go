@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
@@ -44,11 +45,22 @@ type CustomHorizontalPodAutoscalerReconciler struct {
 	Scheme *runtime.Scheme
 
 	jobClients map[types.NamespacedName]jobpkg.JobClient
+
+	mu sync.RWMutex
 }
 
 //+kubebuilder:rbac:groups=custom-autoscaling.sample.com,resources=customhorizontalpodautoscalers,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=custom-autoscaling.sample.com,resources=customhorizontalpodautoscalers/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=custom-autoscaling.sample.com,resources=customhorizontalpodautoscalers/finalizers,verbs=update
+
+func NewReconcile(Client client.Client, Scheme *runtime.Scheme) *CustomHorizontalPodAutoscalerReconciler {
+
+	return &CustomHorizontalPodAutoscalerReconciler{
+		Client:     Client,
+		Scheme:     Scheme,
+		jobClients: make(map[types.NamespacedName]jobpkg.JobClient),
+	}
+}
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -83,14 +95,20 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 		return ctrl.Result{}, err
 	}
 
-	jobClient := r.jobClients[req.NamespacedName]
+	jobClient, jobClientExists := r.jobClients[req.NamespacedName]
 
-	jobClient, err = jobpkg.New(jobpkg.WithInterval(20 * time.Second))
-
-	if err != nil {
-		return ctrl.Result{}, err
+	if !jobClientExists {
+		jobClient, err = jobpkg.New(jobpkg.WithInterval(30 * time.Second))
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+		go jobClient.Start(ctx)
+		r.mu.Lock()
+		jobClientExists = true
+		//logger.Info("jobClient %s", req.NamespacedName)
+		r.jobClients[req.NamespacedName] = jobClient
+		r.mu.Unlock()
 	}
-	go jobClient.Start(ctx)
 
 	return r.updateStatus(ctx, customHPA)
 }
