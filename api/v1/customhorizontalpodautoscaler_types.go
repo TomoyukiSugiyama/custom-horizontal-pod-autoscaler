@@ -24,6 +24,13 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+type TemporaryScaleMetricSpec struct {
+	Type        string `json:"type"`
+	Duration    string `json:"duration"`
+	MinReplicas *int32 `json:"minReplicas"`
+	MaxReplicas int32  `json:"maxReplicas"`
+}
+
 // CustomHorizontalPodAutoscalerSpec defines the desired state of CustomHorizontalPodAutoscaler
 type CustomHorizontalPodAutoscalerSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
@@ -36,6 +43,7 @@ type CustomHorizontalPodAutoscalerSpec struct {
 	MaxReplicasTraining         int32                                          `json:"maxReplicasTraining"`
 	ScaleTargetRef              autoscalingv2.CrossVersionObjectReference      `json:"scaleTargetRef"`
 	Metrics                     []autoscalingv2.MetricSpec                     `json:"metrics"`
+	TemporaryScaleMetrics       []TemporaryScaleMetricSpec                     `json:"temporaryScaleMetrics"`
 	Behavior                    *autoscalingv2.HorizontalPodAutoscalerBehavior `json:"behavior,omitempty"`
 }
 

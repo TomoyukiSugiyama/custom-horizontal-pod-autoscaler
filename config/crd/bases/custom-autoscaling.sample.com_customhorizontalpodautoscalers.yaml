@@ -649,6 +649,26 @@ spec:
                 - kind
                 - name
                 type: object
+              temporaryScaleMetrics:
+                items:
+                  properties:
+                    duration:
+                      type: string
+                    maxReplicas:
+                      format: int32
+                      type: integer
+                    minReplicas:
+                      format: int32
+                      type: integer
+                    type:
+                      type: string
+                  required:
+                  - duration
+                  - maxReplicas
+                  - minReplicas
+                  - type
+                  type: object
+                type: array
             required:
             - horizontalPodAutoscalerName
             - maxReplicas
@@ -657,6 +677,7 @@ spec:
             - minReplicas
             - minReplicasTraining
             - scaleTargetRef
+            - temporaryScaleMetrics
             type: object
           status:
             description: CustomHorizontalPodAutoscalerStatus defines the observed
