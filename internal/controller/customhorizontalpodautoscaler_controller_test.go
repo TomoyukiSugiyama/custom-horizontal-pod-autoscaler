@@ -96,8 +96,8 @@ func newCustomHorizontalPodAutoscaler() *customautoscalingv1.CustomHorizontalPod
 	}
 	workdayMinRelpicas := int32(2)
 	workdayMaxRelpicas := int32(4)
-	trainingMinRelpicas := int32(2)
-	trainingMaxRelpicas := int32(4)
+	trainingMinRelpicas := int32(5)
+	trainingMaxRelpicas := int32(10)
 	temporaryScaleMetrics := []customautoscalingv1.TemporaryScaleMetricSpec{
 		{
 			Type:        "workday",
