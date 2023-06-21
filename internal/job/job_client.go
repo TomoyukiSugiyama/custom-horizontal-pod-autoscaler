@@ -18,13 +18,13 @@ type JobClient interface {
 }
 
 type jobClient struct {
-	api                             v1.API
-	interval                        time.Duration
-	stopCh                          chan struct{}
-	query                           string
-	temporaryScaleMetrics           []apiv1.TemporaryScaleMetricSpec
-	persedQueryResults              map[metricType]string
-	desiredTemporaryScaleMetricSpec apiv1.TemporaryScaleMetricSpec
+	api                               v1.API
+	interval                          time.Duration
+	stopCh                            chan struct{}
+	query                             string
+	customHorizontalPodAutoscalerSpec apiv1.CustomHorizontalPodAutoscalerSpec
+	persedQueryResults                map[metricType]string
+	desiredTemporaryScaleMetricSpec   apiv1.TemporaryScaleMetricSpec
 }
 
 type metricType struct {
@@ -69,9 +69,9 @@ func WithQuery(query string) Option {
 	}
 }
 
-func WithTemporaryScaleMetrics(temporaryScaleMetrics []apiv1.TemporaryScaleMetricSpec) Option {
+func WithCustomHorizontalPodAutoscalerSpec(customHorizontalPodAutoscalerSpec apiv1.CustomHorizontalPodAutoscalerSpec) Option {
 	return func(j *jobClient) {
-		j.temporaryScaleMetrics = temporaryScaleMetrics
+		j.customHorizontalPodAutoscalerSpec = customHorizontalPodAutoscalerSpec
 	}
 }
 
@@ -100,7 +100,7 @@ func (j *jobClient) getTemporaryScaleMetrics(ctx context.Context) {
 		)
 	}
 
-	for _, metric := range j.temporaryScaleMetrics {
+	for _, metric := range j.customHorizontalPodAutoscalerSpec.TemporaryScaleMetrics {
 		logger.Info(
 			"customHPA settings",
 			"duration", metric.Duration,
@@ -134,7 +134,7 @@ func (j *jobClient) perseMetrics(samples model.Vector) error {
 }
 
 func (j *jobClient) updateDesiredMinMaxReplicas() {
-	for _, m := range j.temporaryScaleMetrics {
+	for _, m := range j.customHorizontalPodAutoscalerSpec.TemporaryScaleMetrics {
 		k := metricType{
 			jobType:  m.Type,
 			duration: m.Duration,
@@ -146,6 +146,8 @@ func (j *jobClient) updateDesiredMinMaxReplicas() {
 			return
 		}
 	}
+	j.desiredTemporaryScaleMetricSpec.MinReplicas = j.customHorizontalPodAutoscalerSpec.MinReplicas
+	j.desiredTemporaryScaleMetricSpec.MaxReplicas = j.customHorizontalPodAutoscalerSpec.MaxReplicas
 }
 
 func (j *jobClient) Start(ctx context.Context) {
