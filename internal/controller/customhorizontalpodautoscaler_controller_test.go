@@ -94,18 +94,38 @@ func newCustomHorizontalPodAutoscaler() *customautoscalingv1.CustomHorizontalPod
 			},
 		},
 	}
+	workdayMinRelpicas := int32(2)
+	workdayMaxRelpicas := int32(4)
+	trainingMinRelpicas := int32(5)
+	trainingMaxRelpicas := int32(10)
+	temporaryScaleMetrics := []customautoscalingv1.TemporaryScaleMetricSpec{
+		{
+			Type:        "workday",
+			Duration:    "7-21",
+			MinReplicas: &workdayMinRelpicas,
+			MaxReplicas: workdayMaxRelpicas,
+		},
+		{
+			Type:        "training",
+			Duration:    "7-21",
+			MinReplicas: &trainingMinRelpicas,
+			MaxReplicas: trainingMaxRelpicas,
+		},
+	}
+
 	return &customautoscalingv1.CustomHorizontalPodAutoscaler{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "sample",
 			Namespace: "dummy-namespace",
 		},
 		Spec: customautoscalingv1.CustomHorizontalPodAutoscalerSpec{
-			MinReplicas:         &minReplicas,
-			MinReplicasTraining: &minReplicasTraining,
-			MaxReplicas:         maxReplicas,
-			MaxReplicasTraining: maxReplicasTraining,
-			ScaleTargetRef:      scaleTargetRef,
-			Metrics:             metrics,
+			MinReplicas:           &minReplicas,
+			MinReplicasTraining:   &minReplicasTraining,
+			MaxReplicas:           maxReplicas,
+			MaxReplicasTraining:   maxReplicasTraining,
+			ScaleTargetRef:        scaleTargetRef,
+			Metrics:               metrics,
+			TemporaryScaleMetrics: temporaryScaleMetrics,
 		},
 	}
 }

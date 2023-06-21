@@ -2,13 +2,13 @@ package job
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/prometheus/client_golang/api"
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/promql/parser"
+	apiv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -18,14 +18,15 @@ type JobClient interface {
 }
 
 type jobClient struct {
-	api            v1.API
-	interval       time.Duration
-	stopCh         chan struct{}
-	query          string
-	temporaryScale temporaryScale
+	api                   v1.API
+	interval              time.Duration
+	stopCh                chan struct{}
+	query                 string
+	queryResults          []temporaryScaleMetrics
+	temporaryScaleMetrics []apiv1.TemporaryScaleMetricSpec
 }
 
-type temporaryScale struct {
+type temporaryScaleMetrics struct {
 	duration string
 	jobType  string
 	value    string
@@ -68,6 +69,12 @@ func WithQuery(query string) Option {
 	}
 }
 
+func WithTemporaryScaleMetrics(temporaryScaleMetrics []apiv1.TemporaryScaleMetricSpec) Option {
+	return func(j *jobClient) {
+		j.temporaryScaleMetrics = temporaryScaleMetrics
+	}
+}
+
 func (j *jobClient) getTemporaryScaleMetrics(ctx context.Context) {
 	logger := log.FromContext(ctx)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -83,25 +90,40 @@ func (j *jobClient) getTemporaryScaleMetrics(ctx context.Context) {
 
 	// ref: https://github.com/prometheus/client_golang/issues/1011
 	j.perseMetrics(queryResult.(model.Vector))
-	logger.Info(
-		"get metrics parse",
-		"duration", j.temporaryScale.duration,
-		"type", j.temporaryScale.jobType,
-		"value", j.temporaryScale.value,
-	)
+
+	for _, queryResult := range j.queryResults {
+		logger.Info(
+			"parse query result",
+			"duration", queryResult.duration,
+			"type", queryResult.jobType,
+			"value", queryResult.value,
+		)
+	}
+
+	for _, metric := range j.temporaryScaleMetrics {
+		logger.Info(
+			"customHPA settings",
+			"duration", metric.Duration,
+			"type", metric.Type,
+			"minReplicas", metric.MinReplicas,
+			"macReplicas", metric.MaxReplicas,
+		)
+
+	}
 }
 
 func (j *jobClient) perseMetrics(samples model.Vector) error {
-	if len(samples) != 1 {
-		return errors.New("multiple sample")
+	j.queryResults = make([]temporaryScaleMetrics, len(samples))
+	for i, sample := range samples {
+		j.queryResults[i].value = sample.Value.String()
+		metrics, err := parser.ParseMetric(sample.Metric.String())
+		if err != nil {
+			return err
+		}
+		j.queryResults[i].duration = metrics.Map()["duration"]
+		j.queryResults[i].jobType = metrics.Map()["type"]
+
 	}
-	j.temporaryScale.value = samples[0].Value.String()
-	metrics, err := parser.ParseMetric(samples[0].Metric.String())
-	if err != nil {
-		return err
-	}
-	j.temporaryScale.duration = metrics.Map()["duration"]
-	j.temporaryScale.jobType = metrics.Map()["type"]
 	return nil
 }
 

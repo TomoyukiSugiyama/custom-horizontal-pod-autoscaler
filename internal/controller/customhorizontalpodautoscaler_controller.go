@@ -95,7 +95,10 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 
 	if !jobClientExists {
 		// TODO: Need to set interval from main.
-		jobClient, err = jobpkg.New(jobpkg.WithInterval(30 * time.Second))
+		jobClient, err = jobpkg.New(
+			jobpkg.WithInterval(30*time.Second),
+			jobpkg.WithTemporaryScaleMetrics(customHPA.Spec.TemporaryScaleMetrics),
+		)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -185,8 +188,25 @@ func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(ctx context.Conte
 		return ctrl.Result{}, err
 	}
 
-	customHPA.Status = customautoscalingv1.CustomHorizontalPodAutoscalerStatus(current.Status)
+	// customHPA.Status = customautoscalingv1.CustomHorizontalPodAutoscalerStatus(current.Status)
+	var status customautoscalingv1.CustomHorizontalPodAutoscalerStatus
+
+	status.Conditions = current.Status.Conditions
+	status.CurrentMetrics = current.Status.CurrentMetrics
+	status.CurrentReplicas = current.Status.CurrentReplicas
+	status.DesiredReplicas = current.Status.DesiredReplicas
+	status.ObservedGeneration = current.Status.ObservedGeneration
+	status.LastScaleTime = current.Status.LastScaleTime
+	status.CueerntMaxReplicas = current.Spec.MaxReplicas
+	status.DesiredMaxReplicas = current.Spec.MaxReplicas
+	status.CurrentMinReplicas = *current.Spec.MinReplicas
+	status.DesiredMinReplicas = *current.Spec.MinReplicas
+
+	customHPA.Status = status
 	err = r.Status().Update(ctx, &customHPA)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
 
 	if customHPA.Spec.MinReplicas != current.Spec.MinReplicas {
 		return ctrl.Result{Requeue: true}, nil

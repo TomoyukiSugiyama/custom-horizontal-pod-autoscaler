@@ -24,31 +24,94 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+type TemporaryScaleMetricSpec struct {
+	Type        string `json:"type"`
+	Duration    string `json:"duration"`
+	MinReplicas *int32 `json:"minReplicas"`
+	MaxReplicas int32  `json:"maxReplicas"`
+}
+
 // CustomHorizontalPodAutoscalerSpec defines the desired state of CustomHorizontalPodAutoscaler
 type CustomHorizontalPodAutoscalerSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	HorizontalPodAutoscalerName string                                         `json:"horizontalPodAutoscalerName"`
-	MinReplicas                 *int32                                         `json:"minReplicas"`
-	MinReplicasTraining         *int32                                         `json:"minReplicasTraining"`
-	MaxReplicas                 int32                                          `json:"maxReplicas"`
-	MaxReplicasTraining         int32                                          `json:"maxReplicasTraining"`
-	ScaleTargetRef              autoscalingv2.CrossVersionObjectReference      `json:"scaleTargetRef"`
-	Metrics                     []autoscalingv2.MetricSpec                     `json:"metrics"`
-	Behavior                    *autoscalingv2.HorizontalPodAutoscalerBehavior `json:"behavior,omitempty"`
+	// scaleTargetRef points to the target resource to scale, and is used to the pods for which metrics
+	// should be collected, as well as to actually change the replica count.
+	ScaleTargetRef              autoscalingv2.CrossVersionObjectReference `json:"scaleTargetRef" protobuf:"bytes,1,opt,name=scaleTargetRef"`
+	HorizontalPodAutoscalerName string                                    `json:"horizontalPodAutoscalerName"`
+	// minReplicas is the lower limit for the number of replicas to which the autoscaler
+	// can scale down.  It defaults to 1 pod.  minReplicas is allowed to be 0 if the
+	// alpha feature gate HPAScaleToZero is enabled and at least one Object or External
+	// metric is configured.  Scaling is active as long as at least one metric value is
+	// available.
+	// +optional
+	MinReplicas         *int32 `json:"minReplicas,omitempty" protobuf:"varint,2,opt,name=minReplicas"`
+	MinReplicasTraining *int32 `json:"minReplicasTraining"`
+	MaxReplicas         int32  `json:"maxReplicas" protobuf:"varint,3,opt,name=maxReplicas"`
+	// maxReplicas is the upper limit for the number of replicas to which the autoscaler can scale up.
+	// It cannot be less that minReplicas.
+	MaxReplicasTraining int32 `json:"maxReplicasTraining"`
+	// metrics contains the specifications for which to use to calculate the
+	// desired replica count (the maximum replica count across all metrics will
+	// be used).  The desired replica count is calculated multiplying the
+	// ratio between the target value and the current value by the current
+	// number of pods.  Ergo, metrics used must decrease as the pod count is
+	// increased, and vice-versa.  See the individual metric source types for
+	// more information about how each type of metric must respond.
+	// If not set, the default metric will be set to 80% average CPU utilization.
+	// +listType=atomic
+	// +optional
+	Metrics               []autoscalingv2.MetricSpec `json:"metrics,omitempty" protobuf:"bytes,4,rep,name=metrics"`
+	TemporaryScaleMetrics []TemporaryScaleMetricSpec `json:"temporaryScaleMetrics"`
+
+	// behavior configures the scaling behavior of the target
+	// in both Up and Down directions (scaleUp and scaleDown fields respectively).
+	// If not set, the default HPAScalingRules for scale up and scale down are used.
+	// +optional
+	Behavior *autoscalingv2.HorizontalPodAutoscalerBehavior `json:"behavior,omitempty" protobuf:"bytes,5,opt,name=behavior"`
 }
 
 // CustomHorizontalPodAutoscalerStatus defines the observed state of CustomHorizontalPodAutoscaler
 type CustomHorizontalPodAutoscalerStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	ObservedGeneration *int64                                           `json:"observedGeneration"`
-	LastScaleTime      *metav1.Time                                     `json:"lastScaleTime"`
-	CurrentReplicas    int32                                            `json:"currentReplicas"`
-	DesiredReplicas    int32                                            `json:"desiredReplicas"`
-	CurrentMetrics     []autoscalingv2.MetricStatus                     `json:"currentMetrics"`
-	Conditions         []autoscalingv2.HorizontalPodAutoscalerCondition `json:"conditions"`
+
+	// observedGeneration is the most recent generation observed by this autoscaler.
+	// +optional
+	ObservedGeneration *int64 `json:"observedGeneration,omitempty" protobuf:"varint,1,opt,name=observedGeneration"`
+
+	// lastScaleTime is the last time the HorizontalPodAutoscaler scaled the number of pods,
+	// used by the autoscaler to control how often the number of pods is changed.
+	// +optional
+	LastScaleTime *metav1.Time `json:"lastScaleTime,omitempty" protobuf:"bytes,2,opt,name=lastScaleTime"`
+
+	// currentReplicas is current number of replicas of pods managed by this autoscaler,
+	// as last seen by the autoscaler.
+	// +optional
+	CurrentReplicas int32 `json:"currentReplicas,omitempty" protobuf:"varint,3,opt,name=currentReplicas"`
+
+	// desiredReplicas is the desired number of replicas of pods managed by this autoscaler,
+	// as last calculated by the autoscaler.
+	DesiredReplicas int32 `json:"desiredReplicas" protobuf:"varint,4,opt,name=desiredReplicas"`
+
+	// currentMetrics is the last read state of the metrics used by this autoscaler.
+	// +listType=atomic
+	// +optional
+	CurrentMetrics []autoscalingv2.MetricStatus `json:"currentMetrics" protobuf:"bytes,5,rep,name=currentMetrics"`
+
+	// conditions is the set of conditions required for this autoscaler to scale its target,
+	// and indicates whether or not those conditions are met.
+	// +patchMergeKey=type
+	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=type
+	// +optional
+	Conditions         []autoscalingv2.HorizontalPodAutoscalerCondition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" listType:"map" protobuf:"bytes,6,rep,name=conditions"`
+	CurrentMinReplicas int32                                            `json:"currentMinReplicas"`
+	CueerntMaxReplicas int32                                            `json:"currentMaxReplicas"`
+	DesiredMinReplicas int32                                            `json:"desiredMinReplicas"`
+	DesiredMaxReplicas int32                                            `json:"desiredMaxReplicas"`
 }
 
 //+kubebuilder:object:root=true
