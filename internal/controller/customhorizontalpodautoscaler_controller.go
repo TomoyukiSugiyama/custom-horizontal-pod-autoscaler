@@ -203,7 +203,6 @@ func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(ctx context.Conte
 		return ctrl.Result{}, err
 	}
 
-	// customHPA.Status = customautoscalingv1.CustomHorizontalPodAutoscalerStatus(current.Status)
 	var status customautoscalingv1.CustomHorizontalPodAutoscalerStatus
 
 	status.Conditions = current.Status.Conditions
