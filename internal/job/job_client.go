@@ -90,7 +90,7 @@ func (j *jobClient) getTemporaryScaleMetrics(ctx context.Context) {
 
 	// ref: https://github.com/prometheus/client_golang/issues/1011
 	j.perseMetrics(queryResult.(model.Vector))
-
+	j.updateDesiredMinMaxReplicas()
 	for key, queryResult := range j.persedQueryResults {
 		logger.Info(
 			"parsed query result",
@@ -108,12 +108,17 @@ func (j *jobClient) getTemporaryScaleMetrics(ctx context.Context) {
 			"minReplicas", metric.MinReplicas,
 			"maxReplicas", metric.MaxReplicas,
 		)
-
 	}
+
+	logger.Info(
+		"update desired min and max replicas",
+		"minReplicas", j.desiredTemporaryScaleMetricSpec.MinReplicas,
+		"maxReplicas", j.desiredTemporaryScaleMetricSpec.MaxReplicas,
+	)
 }
 
 func (j *jobClient) perseMetrics(samples model.Vector) error {
-	j.persedQueryResults = make(map[metricType]string, len(samples))
+	j.persedQueryResults = make(map[metricType]string)
 	for _, sample := range samples {
 		metrics, err := parser.ParseMetric(sample.Metric.String())
 		if err != nil {
@@ -128,8 +133,19 @@ func (j *jobClient) perseMetrics(samples model.Vector) error {
 	return nil
 }
 
-func (j *jobClient) decideDesiredMinMaxReplicas() {
-
+func (j *jobClient) updateDesiredMinMaxReplicas() {
+	for _, m := range j.temporaryScaleMetrics {
+		k := metricType{
+			jobType:  m.Type,
+			duration: m.Duration,
+		}
+		v, isExist := j.persedQueryResults[k]
+		if isExist && v == "1" {
+			j.desiredTemporaryScaleMetricSpec.MinReplicas = m.MinReplicas
+			j.desiredTemporaryScaleMetricSpec.MaxReplicas = m.MaxReplicas
+			return
+		}
+	}
 }
 
 func (j *jobClient) Start(ctx context.Context) {
