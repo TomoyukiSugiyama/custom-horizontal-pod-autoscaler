@@ -109,7 +109,7 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 		logger.Info("create jobClient successfully")
 	}
 
-	err = r.reconcileHorizontalPodAutoscaler(ctx, customHPA)
+	err = r.reconcileHorizontalPodAutoscaler(ctx, customHPA, jobClient)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -118,9 +118,23 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 }
 
 // reconcileHorizontalPodAutoscaler is a reconcile function for horizontal pod autoscaling
-func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscaler(ctx context.Context, customHPA customautoscalingv1.CustomHorizontalPodAutoscaler) error {
+func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscaler(
+	ctx context.Context,
+	customHPA customautoscalingv1.CustomHorizontalPodAutoscaler,
+	jobClient jobpkg.JobClient,
+) error {
 	logger := log.FromContext(ctx)
 	hpaName := customHPA.Name
+	desiredMinMaxReplicas := jobClient.GetDesiredMinMaxReplicas()
+	minReplicas := customHPA.Spec.MinReplicas
+	if desiredMinMaxReplicas.MinReplicas != nil {
+		minReplicas = desiredMinMaxReplicas.MinReplicas
+	}
+
+	maxReplicas := customHPA.Spec.MaxReplicas
+	if desiredMinMaxReplicas.MaxReplicas != 0 {
+		maxReplicas = desiredMinMaxReplicas.MaxReplicas
+	}
 
 	hpa := &autoscalingv2.HorizontalPodAutoscaler{
 		TypeMeta: metav1.TypeMeta{
@@ -135,8 +149,8 @@ func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscal
 			},
 		},
 		Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
-			MinReplicas:    customHPA.Spec.MinReplicas,
-			MaxReplicas:    customHPA.Spec.MaxReplicas,
+			MinReplicas:    minReplicas,
+			MaxReplicas:    maxReplicas,
 			ScaleTargetRef: customHPA.Spec.ScaleTargetRef,
 			Metrics:        customHPA.Spec.Metrics,
 			Behavior:       customHPA.Spec.Behavior.DeepCopy(),

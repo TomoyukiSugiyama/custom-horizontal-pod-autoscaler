@@ -15,6 +15,7 @@ import (
 type JobClient interface {
 	Start(ctx context.Context)
 	Stop()
+	GetDesiredMinMaxReplicas() apiv1.TemporaryScaleMetricSpec
 }
 
 type jobClient struct {
@@ -148,6 +149,10 @@ func (j *jobClient) updateDesiredMinMaxReplicas() {
 	}
 	j.desiredTemporaryScaleMetricSpec.MinReplicas = j.customHorizontalPodAutoscalerSpec.MinReplicas
 	j.desiredTemporaryScaleMetricSpec.MaxReplicas = j.customHorizontalPodAutoscalerSpec.MaxReplicas
+}
+
+func (j *jobClient) GetDesiredMinMaxReplicas() apiv1.TemporaryScaleMetricSpec {
+	return j.desiredTemporaryScaleMetricSpec
 }
 
 func (j *jobClient) Start(ctx context.Context) {
