@@ -18,18 +18,18 @@ type JobClient interface {
 }
 
 type jobClient struct {
-	api                   v1.API
-	interval              time.Duration
-	stopCh                chan struct{}
-	query                 string
-	persedQueryResults    []temporaryScaleMetrics
-	temporaryScaleMetrics []apiv1.TemporaryScaleMetricSpec
+	api                             v1.API
+	interval                        time.Duration
+	stopCh                          chan struct{}
+	query                           string
+	temporaryScaleMetrics           []apiv1.TemporaryScaleMetricSpec
+	persedQueryResults              map[metricType]string
+	desiredTemporaryScaleMetricSpec apiv1.TemporaryScaleMetricSpec
 }
 
-type temporaryScaleMetrics struct {
+type metricType struct {
 	duration string
 	jobType  string
-	value    string
 }
 
 type Option func(*jobClient)
@@ -91,12 +91,12 @@ func (j *jobClient) getTemporaryScaleMetrics(ctx context.Context) {
 	// ref: https://github.com/prometheus/client_golang/issues/1011
 	j.perseMetrics(queryResult.(model.Vector))
 
-	for _, queryResult := range j.persedQueryResults {
+	for key, queryResult := range j.persedQueryResults {
 		logger.Info(
-			"parse query result",
-			"duration", queryResult.duration,
-			"type", queryResult.jobType,
-			"value", queryResult.value,
+			"parsed query result",
+			"duration", key.duration,
+			"type", key.jobType,
+			"value", queryResult,
 		)
 	}
 
@@ -106,25 +106,30 @@ func (j *jobClient) getTemporaryScaleMetrics(ctx context.Context) {
 			"duration", metric.Duration,
 			"type", metric.Type,
 			"minReplicas", metric.MinReplicas,
-			"macReplicas", metric.MaxReplicas,
+			"maxReplicas", metric.MaxReplicas,
 		)
 
 	}
 }
 
 func (j *jobClient) perseMetrics(samples model.Vector) error {
-	j.persedQueryResults = make([]temporaryScaleMetrics, len(samples))
-	for i, sample := range samples {
-		j.persedQueryResults[i].value = sample.Value.String()
+	j.persedQueryResults = make(map[metricType]string, len(samples))
+	for _, sample := range samples {
 		metrics, err := parser.ParseMetric(sample.Metric.String())
 		if err != nil {
 			return err
 		}
-		j.persedQueryResults[i].duration = metrics.Map()["duration"]
-		j.persedQueryResults[i].jobType = metrics.Map()["type"]
-
+		k := metricType{
+			jobType:  metrics.Map()["type"],
+			duration: metrics.Map()["duration"],
+		}
+		j.persedQueryResults[k] = sample.Value.String()
 	}
 	return nil
+}
+
+func (j *jobClient) decideDesiredMinMaxReplicas() {
+
 }
 
 func (j *jobClient) Start(ctx context.Context) {
