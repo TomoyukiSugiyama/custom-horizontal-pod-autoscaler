@@ -18,18 +18,18 @@ type JobClient interface {
 }
 
 type jobClient struct {
-	api                   v1.API
-	interval              time.Duration
-	stopCh                chan struct{}
-	query                 string
-	queryResults          []temporaryScaleMetrics
-	temporaryScaleMetrics []apiv1.TemporaryScaleMetricSpec
+	api                               v1.API
+	interval                          time.Duration
+	stopCh                            chan struct{}
+	query                             string
+	customHorizontalPodAutoscalerSpec apiv1.CustomHorizontalPodAutoscalerSpec
+	persedQueryResults                map[metricType]string
+	desiredTemporaryScaleMetricSpec   apiv1.TemporaryScaleMetricSpec
 }
 
-type temporaryScaleMetrics struct {
+type metricType struct {
 	duration string
 	jobType  string
-	value    string
 }
 
 type Option func(*jobClient)
@@ -69,9 +69,9 @@ func WithQuery(query string) Option {
 	}
 }
 
-func WithTemporaryScaleMetrics(temporaryScaleMetrics []apiv1.TemporaryScaleMetricSpec) Option {
+func WithCustomHorizontalPodAutoscalerSpec(customHorizontalPodAutoscalerSpec apiv1.CustomHorizontalPodAutoscalerSpec) Option {
 	return func(j *jobClient) {
-		j.temporaryScaleMetrics = temporaryScaleMetrics
+		j.customHorizontalPodAutoscalerSpec = customHorizontalPodAutoscalerSpec
 	}
 }
 
@@ -90,41 +90,64 @@ func (j *jobClient) getTemporaryScaleMetrics(ctx context.Context) {
 
 	// ref: https://github.com/prometheus/client_golang/issues/1011
 	j.perseMetrics(queryResult.(model.Vector))
-
-	for _, queryResult := range j.queryResults {
+	j.updateDesiredMinMaxReplicas()
+	for key, queryResult := range j.persedQueryResults {
 		logger.Info(
-			"parse query result",
-			"duration", queryResult.duration,
-			"type", queryResult.jobType,
-			"value", queryResult.value,
+			"parsed query result",
+			"duration", key.duration,
+			"type", key.jobType,
+			"value", queryResult,
 		)
 	}
 
-	for _, metric := range j.temporaryScaleMetrics {
+	for _, metric := range j.customHorizontalPodAutoscalerSpec.TemporaryScaleMetrics {
 		logger.Info(
 			"customHPA settings",
 			"duration", metric.Duration,
 			"type", metric.Type,
 			"minReplicas", metric.MinReplicas,
-			"macReplicas", metric.MaxReplicas,
+			"maxReplicas", metric.MaxReplicas,
 		)
-
 	}
+
+	logger.Info(
+		"update desired min and max replicas",
+		"minReplicas", j.desiredTemporaryScaleMetricSpec.MinReplicas,
+		"maxReplicas", j.desiredTemporaryScaleMetricSpec.MaxReplicas,
+	)
 }
 
 func (j *jobClient) perseMetrics(samples model.Vector) error {
-	j.queryResults = make([]temporaryScaleMetrics, len(samples))
-	for i, sample := range samples {
-		j.queryResults[i].value = sample.Value.String()
+	j.persedQueryResults = make(map[metricType]string)
+	for _, sample := range samples {
 		metrics, err := parser.ParseMetric(sample.Metric.String())
 		if err != nil {
 			return err
 		}
-		j.queryResults[i].duration = metrics.Map()["duration"]
-		j.queryResults[i].jobType = metrics.Map()["type"]
-
+		k := metricType{
+			jobType:  metrics.Map()["type"],
+			duration: metrics.Map()["duration"],
+		}
+		j.persedQueryResults[k] = sample.Value.String()
 	}
 	return nil
+}
+
+func (j *jobClient) updateDesiredMinMaxReplicas() {
+	for _, m := range j.customHorizontalPodAutoscalerSpec.TemporaryScaleMetrics {
+		k := metricType{
+			jobType:  m.Type,
+			duration: m.Duration,
+		}
+		v, isExist := j.persedQueryResults[k]
+		if isExist && v == "1" {
+			j.desiredTemporaryScaleMetricSpec.MinReplicas = m.MinReplicas
+			j.desiredTemporaryScaleMetricSpec.MaxReplicas = m.MaxReplicas
+			return
+		}
+	}
+	j.desiredTemporaryScaleMetricSpec.MinReplicas = j.customHorizontalPodAutoscalerSpec.MinReplicas
+	j.desiredTemporaryScaleMetricSpec.MaxReplicas = j.customHorizontalPodAutoscalerSpec.MaxReplicas
 }
 
 func (j *jobClient) Start(ctx context.Context) {
