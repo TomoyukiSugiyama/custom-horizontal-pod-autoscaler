@@ -22,7 +22,7 @@ type jobClient struct {
 	interval              time.Duration
 	stopCh                chan struct{}
 	query                 string
-	queryResults          []temporaryScaleMetrics
+	persedQueryResults    []temporaryScaleMetrics
 	temporaryScaleMetrics []apiv1.TemporaryScaleMetricSpec
 }
 
@@ -91,7 +91,7 @@ func (j *jobClient) getTemporaryScaleMetrics(ctx context.Context) {
 	// ref: https://github.com/prometheus/client_golang/issues/1011
 	j.perseMetrics(queryResult.(model.Vector))
 
-	for _, queryResult := range j.queryResults {
+	for _, queryResult := range j.persedQueryResults {
 		logger.Info(
 			"parse query result",
 			"duration", queryResult.duration,
@@ -113,15 +113,15 @@ func (j *jobClient) getTemporaryScaleMetrics(ctx context.Context) {
 }
 
 func (j *jobClient) perseMetrics(samples model.Vector) error {
-	j.queryResults = make([]temporaryScaleMetrics, len(samples))
+	j.persedQueryResults = make([]temporaryScaleMetrics, len(samples))
 	for i, sample := range samples {
-		j.queryResults[i].value = sample.Value.String()
+		j.persedQueryResults[i].value = sample.Value.String()
 		metrics, err := parser.ParseMetric(sample.Metric.String())
 		if err != nil {
 			return err
 		}
-		j.queryResults[i].duration = metrics.Map()["duration"]
-		j.queryResults[i].jobType = metrics.Map()["type"]
+		j.persedQueryResults[i].duration = metrics.Map()["duration"]
+		j.persedQueryResults[i].jobType = metrics.Map()["type"]
 
 	}
 	return nil
