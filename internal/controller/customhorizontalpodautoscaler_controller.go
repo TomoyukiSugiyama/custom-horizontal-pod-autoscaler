@@ -197,10 +197,10 @@ func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(ctx context.Conte
 	status.DesiredReplicas = current.Status.DesiredReplicas
 	status.ObservedGeneration = current.Status.ObservedGeneration
 	status.LastScaleTime = current.Status.LastScaleTime
-	status.CueerntMaxReplicas = current.Status.CurrentReplicas
-	status.DesiredMaxReplicas = current.Status.CurrentReplicas
-	status.CurrentMinReplicas = current.Status.CurrentReplicas
-	status.DesiredMinReplicas = current.Status.CurrentReplicas
+	status.CueerntMaxReplicas = current.Spec.MaxReplicas
+	status.DesiredMaxReplicas = current.Spec.MaxReplicas
+	status.CurrentMinReplicas = *current.Spec.MinReplicas
+	status.DesiredMinReplicas = *current.Spec.MinReplicas
 
 	customHPA.Status = status
 	err = r.Status().Update(ctx, &customHPA)
