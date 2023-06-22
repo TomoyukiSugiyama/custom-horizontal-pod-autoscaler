@@ -98,6 +98,8 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 		jobClient, err = jobpkg.New(
 			jobpkg.WithInterval(30*time.Second),
 			jobpkg.WithCustomHorizontalPodAutoscalerSpec(customHPA.Spec),
+			jobpkg.WithCustomHPA(customHPA),
+			jobpkg.WithCtrlClient(r.Client),
 		)
 		if err != nil {
 			return ctrl.Result{}, err
