@@ -173,7 +173,6 @@ func (j *jobClient) updateStatus(ctx context.Context) error {
 	j.ctrlClient.Get(ctx, ctrlClient.ObjectKey{Namespace: j.customHPA.Namespace, Name: j.customHPA.Name}, &current)
 	current.Status.DesiredMinReplicas = *j.customHorizontalPodAutoscalerSpec.MinReplicas
 	current.Status.DesiredMaxReplicas = j.customHorizontalPodAutoscalerSpec.MaxReplicas
-	current.Status.DesiredReplicas = *j.customHorizontalPodAutoscalerSpec.MinReplicas
 	return j.ctrlClient.Status().Update(ctx, &current)
 }
 
