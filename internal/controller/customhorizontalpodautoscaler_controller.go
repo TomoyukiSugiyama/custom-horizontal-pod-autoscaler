@@ -49,16 +49,30 @@ type CustomHorizontalPodAutoscalerReconciler struct {
 	mu sync.RWMutex
 }
 
+type Option func(*CustomHorizontalPodAutoscalerReconciler)
+
 //+kubebuilder:rbac:groups=custom-autoscaling.sample.com,resources=customhorizontalpodautoscalers,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=custom-autoscaling.sample.com,resources=customhorizontalpodautoscalers/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=custom-autoscaling.sample.com,resources=customhorizontalpodautoscalers/finalizers,verbs=update
 
-func NewReconcile(Client client.Client, Scheme *runtime.Scheme) *CustomHorizontalPodAutoscalerReconciler {
+func NewReconcile(Client client.Client, Scheme *runtime.Scheme, opts ...Option) *CustomHorizontalPodAutoscalerReconciler {
 
-	return &CustomHorizontalPodAutoscalerReconciler{
+	r := &CustomHorizontalPodAutoscalerReconciler{
 		Client:     Client,
 		Scheme:     Scheme,
 		jobClients: make(map[types.NamespacedName]jobpkg.JobClient),
+	}
+
+	for _, opt := range opts {
+		opt(r)
+	}
+
+	return r
+}
+
+func WithJobClients(jobClients map[types.NamespacedName]jobpkg.JobClient) Option {
+	return func(r *CustomHorizontalPodAutoscalerReconciler) {
+		r.jobClients = jobClients
 	}
 }
 
@@ -79,7 +93,7 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 
 	var customHPA customautoscalingv1.CustomHorizontalPodAutoscaler
 	err := r.Get(ctx, req.NamespacedName, &customHPA)
-
+	// TODO: stop job if isNotFound error is occered
 	if errors.IsNotFound(err) {
 		return ctrl.Result{}, nil
 	}
@@ -115,7 +129,7 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 		return ctrl.Result{}, err
 	}
 
-	return r.updateStatus(ctx, customHPA, jobClient)
+	return r.updateStatus(ctx, customHPA)
 }
 
 // reconcileHorizontalPodAutoscaler is a reconcile function for horizontal pod autoscaling
@@ -126,6 +140,18 @@ func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscal
 ) error {
 	logger := log.FromContext(ctx)
 	hpaName := customHPA.Name
+
+	desiredMinMaxReplicas := jobClient.GetDesiredMinMaxReplicas()
+	minReplicas := customHPA.Spec.MinReplicas
+	if desiredMinMaxReplicas.MinReplicas != nil {
+		minReplicas = desiredMinMaxReplicas.MinReplicas
+	}
+
+	maxReplicas := customHPA.Spec.MaxReplicas
+	// TODO: change MaxReplicas type to *int32
+	if desiredMinMaxReplicas.MaxReplicas != 0 {
+		maxReplicas = desiredMinMaxReplicas.MaxReplicas
+	}
 
 	hpa := &autoscalingv2.HorizontalPodAutoscaler{
 		TypeMeta: metav1.TypeMeta{
@@ -140,8 +166,8 @@ func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscal
 			},
 		},
 		Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
-			MinReplicas:    &customHPA.Status.DesiredMinReplicas,
-			MaxReplicas:    customHPA.Status.DesiredMaxReplicas,
+			MinReplicas:    minReplicas,
+			MaxReplicas:    maxReplicas,
 			ScaleTargetRef: customHPA.Spec.ScaleTargetRef,
 			Metrics:        customHPA.Spec.Metrics,
 			Behavior:       customHPA.Spec.Behavior.DeepCopy(),
@@ -189,7 +215,6 @@ func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscal
 func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(
 	ctx context.Context,
 	customHPA customautoscalingv1.CustomHorizontalPodAutoscaler,
-	jobClient jobpkg.JobClient,
 ) (ctrl.Result, error) {
 	var current autoscalingv2.HorizontalPodAutoscaler
 	err := r.Get(ctx, client.ObjectKey{Namespace: customHPA.Namespace, Name: customHPA.Name}, &current)
