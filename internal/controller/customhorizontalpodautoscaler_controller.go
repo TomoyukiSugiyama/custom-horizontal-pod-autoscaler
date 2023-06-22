@@ -79,7 +79,7 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 
 	var customHPA customautoscalingv1.CustomHorizontalPodAutoscaler
 	err := r.Get(ctx, req.NamespacedName, &customHPA)
-
+	// TODO: stop job if isNotFound error is occered
 	if errors.IsNotFound(err) {
 		return ctrl.Result{}, nil
 	}
@@ -110,19 +110,18 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 		logger.Info("create jobClient successfully")
 	}
 
-	err = r.reconcileHorizontalPodAutoscaler(ctx, customHPA, jobClient)
+	err = r.reconcileHorizontalPodAutoscaler(ctx, customHPA)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	return r.updateStatus(ctx, customHPA, jobClient)
+	return r.updateStatus(ctx, customHPA)
 }
 
 // reconcileHorizontalPodAutoscaler is a reconcile function for horizontal pod autoscaling
 func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscaler(
 	ctx context.Context,
 	customHPA customautoscalingv1.CustomHorizontalPodAutoscaler,
-	jobClient jobpkg.JobClient,
 ) error {
 	logger := log.FromContext(ctx)
 	hpaName := customHPA.Name
@@ -189,7 +188,6 @@ func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscal
 func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(
 	ctx context.Context,
 	customHPA customautoscalingv1.CustomHorizontalPodAutoscaler,
-	jobClient jobpkg.JobClient,
 ) (ctrl.Result, error) {
 	var current autoscalingv2.HorizontalPodAutoscaler
 	err := r.Get(ctx, client.ObjectKey{Namespace: customHPA.Namespace, Name: customHPA.Name}, &current)
