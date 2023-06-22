@@ -97,7 +97,8 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 		// TODO: Need to set interval from main.
 		jobClient, err = jobpkg.New(
 			jobpkg.WithInterval(30*time.Second),
-			jobpkg.WithCustomHorizontalPodAutoscalerSpec(customHPA.Spec),
+			jobpkg.WithCustomHPA(customHPA),
+			jobpkg.WithCtrlClient(r.Client),
 		)
 		if err != nil {
 			return ctrl.Result{}, err
@@ -125,17 +126,6 @@ func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscal
 ) error {
 	logger := log.FromContext(ctx)
 	hpaName := customHPA.Name
-	desiredMinMaxReplicas := jobClient.GetDesiredMinMaxReplicas()
-	minReplicas := customHPA.Spec.MinReplicas
-	if desiredMinMaxReplicas.MinReplicas != nil {
-		minReplicas = desiredMinMaxReplicas.MinReplicas
-	}
-
-	maxReplicas := customHPA.Spec.MaxReplicas
-	// TODO: change MaxReplicas type to *int32
-	if desiredMinMaxReplicas.MaxReplicas != 0 {
-		maxReplicas = desiredMinMaxReplicas.MaxReplicas
-	}
 
 	hpa := &autoscalingv2.HorizontalPodAutoscaler{
 		TypeMeta: metav1.TypeMeta{
@@ -150,8 +140,8 @@ func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscal
 			},
 		},
 		Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
-			MinReplicas:    minReplicas,
-			MaxReplicas:    maxReplicas,
+			MinReplicas:    &customHPA.Status.DesiredMinReplicas,
+			MaxReplicas:    customHPA.Status.DesiredMaxReplicas,
 			ScaleTargetRef: customHPA.Spec.ScaleTargetRef,
 			Metrics:        customHPA.Spec.Metrics,
 			Behavior:       customHPA.Spec.Behavior.DeepCopy(),
@@ -206,22 +196,14 @@ func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	desiredMinMaxReplicas := jobClient.GetDesiredMinMaxReplicas()
-
-	desiredMinReplicas := int32(0)
-	if desiredMinMaxReplicas.MinReplicas != nil {
-		desiredMinReplicas = *desiredMinMaxReplicas.MinReplicas
-	}
-
-	desiredMaxReplicas := desiredMinMaxReplicas.MaxReplicas
 
 	status := customautoscalingv1.CustomHorizontalPodAutoscalerStatus{
 		CurrentReplicas:    current.Status.CurrentReplicas,
 		DesiredReplicas:    current.Status.DesiredReplicas,
 		CurrentMinReplicas: *current.Spec.MinReplicas,
-		DesiredMinReplicas: desiredMinReplicas,
+		DesiredMinReplicas: customHPA.Status.DesiredMinReplicas,
 		CueerntMaxReplicas: current.Spec.MaxReplicas,
-		DesiredMaxReplicas: desiredMaxReplicas,
+		DesiredMaxReplicas: customHPA.Status.DesiredMaxReplicas,
 		LastScaleTime:      current.Status.LastScaleTime,
 		CurrentMetrics:     current.Status.CurrentMetrics,
 		Conditions:         current.Status.Conditions,
