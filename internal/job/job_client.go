@@ -45,10 +45,11 @@ func New(opts ...Option) (JobClient, error) {
 	api := v1.NewAPI(client)
 
 	j := &jobClient{
-		api:      api,
-		interval: 30 * time.Second,
-		stopCh:   make(chan struct{}),
-		query:    "temporary_scale",
+		api:                             api,
+		interval:                        30 * time.Second,
+		stopCh:                          make(chan struct{}),
+		query:                           "temporary_scale",
+		desiredTemporaryScaleMetricSpec: apiv1.TemporaryScaleMetricSpec{},
 	}
 
 	for _, opt := range opts {

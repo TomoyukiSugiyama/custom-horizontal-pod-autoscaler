@@ -114,7 +114,7 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 		return ctrl.Result{}, err
 	}
 
-	return r.updateStatus(ctx, customHPA)
+	return r.updateStatus(ctx, customHPA, jobClient)
 }
 
 // reconcileHorizontalPodAutoscaler is a reconcile function for horizontal pod autoscaling
@@ -196,25 +196,37 @@ func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscal
 	return nil
 }
 
-func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(ctx context.Context, customHPA customautoscalingv1.CustomHorizontalPodAutoscaler) (ctrl.Result, error) {
+func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(
+	ctx context.Context,
+	customHPA customautoscalingv1.CustomHorizontalPodAutoscaler,
+	jobClient jobpkg.JobClient,
+) (ctrl.Result, error) {
 	var current autoscalingv2.HorizontalPodAutoscaler
 	err := r.Get(ctx, client.ObjectKey{Namespace: customHPA.Namespace, Name: customHPA.Name}, &current)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
+	desiredMinMaxReplicas := jobClient.GetDesiredMinMaxReplicas()
 
-	var status customautoscalingv1.CustomHorizontalPodAutoscalerStatus
+	desiredMinReplicas := int32(0)
+	if desiredMinMaxReplicas.MinReplicas != nil {
+		desiredMinReplicas = *desiredMinMaxReplicas.MinReplicas
+	}
 
-	status.Conditions = current.Status.Conditions
-	status.CurrentMetrics = current.Status.CurrentMetrics
-	status.CurrentReplicas = current.Status.CurrentReplicas
-	status.DesiredReplicas = current.Status.DesiredReplicas
-	status.ObservedGeneration = current.Status.ObservedGeneration
-	status.LastScaleTime = current.Status.LastScaleTime
-	status.CueerntMaxReplicas = current.Spec.MaxReplicas
-	status.DesiredMaxReplicas = current.Spec.MaxReplicas
-	status.CurrentMinReplicas = *current.Spec.MinReplicas
-	status.DesiredMinReplicas = *current.Spec.MinReplicas
+	desiredMaxReplicas := desiredMinMaxReplicas.MaxReplicas
+
+	status := customautoscalingv1.CustomHorizontalPodAutoscalerStatus{
+		CurrentReplicas:    current.Status.CurrentReplicas,
+		DesiredReplicas:    current.Status.DesiredReplicas,
+		CurrentMinReplicas: *current.Spec.MinReplicas,
+		DesiredMinReplicas: desiredMinReplicas,
+		CueerntMaxReplicas: current.Spec.MaxReplicas,
+		DesiredMaxReplicas: desiredMaxReplicas,
+		LastScaleTime:      current.Status.LastScaleTime,
+		CurrentMetrics:     current.Status.CurrentMetrics,
+		Conditions:         current.Status.Conditions,
+		ObservedGeneration: current.Status.ObservedGeneration,
+	}
 
 	customHPA.Status = status
 	err = r.Status().Update(ctx, &customHPA)
