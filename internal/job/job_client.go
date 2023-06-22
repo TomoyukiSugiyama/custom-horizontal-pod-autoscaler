@@ -30,6 +30,8 @@ type jobClient struct {
 	customHPA                       customautoscalingv1.CustomHorizontalPodAutoscaler
 }
 
+var _ JobClient = (*jobClient)(nil)
+
 type metricType struct {
 	duration string
 	jobType  string

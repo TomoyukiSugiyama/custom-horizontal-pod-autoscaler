@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
 
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
@@ -18,6 +19,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
+	jobpkg "sample.com/custom-horizontal-pod-autoscaler/internal/job"
 )
 
 var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
@@ -27,8 +29,9 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 	It("Should create HorizontalPodAutoscaler", func() {
 		customHorizontalPodAutoscaler := newCustomHorizontalPodAutoscaler()
 		err := k8sClient.Create(ctx, customHorizontalPodAutoscaler)
+		fakeJobClient := jobpkg.FakeNew(k8sClient, "dummy-namespace", "sample")
+		fakeJobClient.Start(ctx)
 		Expect(err).NotTo(HaveOccurred())
-
 		hpa := autoscalingv2.HorizontalPodAutoscaler{}
 		Eventually(func() error {
 			return k8sClient.Get(ctx, client.ObjectKey{Namespace: "dummy-namespace", Name: "sample"}, &hpa)
@@ -48,7 +51,11 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 		})
 		Expect(err).NotTo(HaveOccurred())
 
-		reconciler := NewReconcile(k8sClient, scheme.Scheme)
+		fakeJobClient := jobpkg.FakeNew(k8sClient, "dummy-namespace", "sample")
+		namespacedName := types.NamespacedName{Namespace: "dummy-namespace", Name: "sample"}
+		fakeJobClients := map[types.NamespacedName]jobpkg.JobClient{namespacedName: fakeJobClient}
+
+		reconciler := NewReconcile(k8sClient, scheme.Scheme, WithJobClients(fakeJobClients))
 
 		err = reconciler.SetupWithManager(mgr)
 		Expect(err).NotTo(HaveOccurred())

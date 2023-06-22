@@ -49,16 +49,30 @@ type CustomHorizontalPodAutoscalerReconciler struct {
 	mu sync.RWMutex
 }
 
+type Option func(*CustomHorizontalPodAutoscalerReconciler)
+
 //+kubebuilder:rbac:groups=custom-autoscaling.sample.com,resources=customhorizontalpodautoscalers,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=custom-autoscaling.sample.com,resources=customhorizontalpodautoscalers/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=custom-autoscaling.sample.com,resources=customhorizontalpodautoscalers/finalizers,verbs=update
 
-func NewReconcile(Client client.Client, Scheme *runtime.Scheme) *CustomHorizontalPodAutoscalerReconciler {
+func NewReconcile(Client client.Client, Scheme *runtime.Scheme, opts ...Option) *CustomHorizontalPodAutoscalerReconciler {
 
-	return &CustomHorizontalPodAutoscalerReconciler{
+	r := &CustomHorizontalPodAutoscalerReconciler{
 		Client:     Client,
 		Scheme:     Scheme,
 		jobClients: make(map[types.NamespacedName]jobpkg.JobClient),
+	}
+
+	for _, opt := range opts {
+		opt(r)
+	}
+
+	return r
+}
+
+func WithJobClients(jobClients map[types.NamespacedName]jobpkg.JobClient) Option {
+	return func(r *CustomHorizontalPodAutoscalerReconciler) {
+		r.jobClients = jobClients
 	}
 }
 
