@@ -207,22 +207,14 @@ func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	desiredMinMaxReplicas := jobClient.GetDesiredMinMaxReplicas()
-
-	desiredMinReplicas := int32(0)
-	if desiredMinMaxReplicas.MinReplicas != nil {
-		desiredMinReplicas = *desiredMinMaxReplicas.MinReplicas
-	}
-
-	desiredMaxReplicas := desiredMinMaxReplicas.MaxReplicas
 
 	status := customautoscalingv1.CustomHorizontalPodAutoscalerStatus{
 		CurrentReplicas:    current.Status.CurrentReplicas,
 		DesiredReplicas:    current.Status.DesiredReplicas,
 		CurrentMinReplicas: *current.Spec.MinReplicas,
-		DesiredMinReplicas: desiredMinReplicas,
+		DesiredMinReplicas: customHPA.Status.DesiredMinReplicas,
 		CueerntMaxReplicas: current.Spec.MaxReplicas,
-		DesiredMaxReplicas: desiredMaxReplicas,
+		DesiredMaxReplicas: customHPA.Status.DesiredMaxReplicas,
 		LastScaleTime:      current.Status.LastScaleTime,
 		CurrentMetrics:     current.Status.CurrentMetrics,
 		Conditions:         current.Status.Conditions,
