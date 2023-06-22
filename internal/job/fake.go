@@ -5,16 +5,13 @@ import (
 
 	"k8s.io/utils/pointer"
 	apiv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
-	ctrlClient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type FakeJobClient struct {
-	ctrlClient                      ctrlClient.Client
-	namespace                       string
-	name                            string
 	desiredTemporaryScaleMetricSpec apiv1.TemporaryScaleMetricSpec
 }
 
+// Guarantee *FakeJobClient implements JobClient.
 var _ JobClient = (*FakeJobClient)(nil)
 
 func FakeNew(desiredTemporaryScaleMetricSpec apiv1.TemporaryScaleMetricSpec) *FakeJobClient {
