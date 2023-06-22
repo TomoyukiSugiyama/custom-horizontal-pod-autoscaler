@@ -17,6 +17,7 @@ import (
 type JobClient interface {
 	Start(ctx context.Context)
 	Stop()
+	GetDesiredMinMaxReplicas() apiv1.TemporaryScaleMetricSpec
 }
 
 type jobClient struct {
@@ -168,6 +169,10 @@ func (j *jobClient) updateStatus(ctx context.Context) error {
 	current.Status.DesiredMinReplicas = *j.desiredTemporaryScaleMetricSpec.MinReplicas
 	current.Status.DesiredMaxReplicas = j.desiredTemporaryScaleMetricSpec.MaxReplicas
 	return j.ctrlClient.Status().Update(ctx, &current)
+}
+
+func (j *jobClient) GetDesiredMinMaxReplicas() apiv1.TemporaryScaleMetricSpec {
+	return j.desiredTemporaryScaleMetricSpec
 }
 
 func (j *jobClient) Start(ctx context.Context) {

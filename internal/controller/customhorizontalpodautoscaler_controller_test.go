@@ -16,10 +16,10 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	ctrl "sigs.k8s.io/controller-runtime"
-
+	apiv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
 	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
 	jobpkg "sample.com/custom-horizontal-pod-autoscaler/internal/job"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
@@ -29,8 +29,6 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 	It("Should create HorizontalPodAutoscaler", func() {
 		customHorizontalPodAutoscaler := newCustomHorizontalPodAutoscaler()
 		err := k8sClient.Create(ctx, customHorizontalPodAutoscaler)
-		fakeJobClient := jobpkg.FakeNew(k8sClient, "dummy-namespace", "sample")
-		fakeJobClient.Start(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		hpa := autoscalingv2.HorizontalPodAutoscaler{}
 		Eventually(func() error {
@@ -51,7 +49,11 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 		})
 		Expect(err).NotTo(HaveOccurred())
 
-		fakeJobClient := jobpkg.FakeNew(k8sClient, "dummy-namespace", "sample")
+		desiredSpec := apiv1.TemporaryScaleMetricSpec{
+			MinReplicas: pointer.Int32(1),
+			MaxReplicas: int32(5),
+		}
+		fakeJobClient := jobpkg.FakeNew(desiredSpec)
 		namespacedName := types.NamespacedName{Namespace: "dummy-namespace", Name: "sample"}
 		fakeJobClients := map[types.NamespacedName]jobpkg.JobClient{namespacedName: fakeJobClient}
 
