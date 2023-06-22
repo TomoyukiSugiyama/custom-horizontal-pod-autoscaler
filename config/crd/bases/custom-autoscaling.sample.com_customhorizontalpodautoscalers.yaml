@@ -15,7 +15,26 @@ spec:
     singular: customhorizontalpodautoscaler
   scope: Namespaced
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.scaleTargetRef.kind
+      name: RefKind
+      type: string
+    - jsonPath: .spec.scaleTargetRef.name
+      name: RefName
+      type: string
+    - jsonPath: .status.currentMinReplicas
+      name: Minpod
+      type: integer
+    - jsonPath: .status.currentMaxReplicas
+      name: Maxpod
+      type: integer
+    - jsonPath: .status.currentReplicas
+      name: Replicas
+      type: integer
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1
     schema:
       openAPIV3Schema:
         description: CustomHorizontalPodAutoscaler is the Schema for the customhorizontalpodautoscalers
