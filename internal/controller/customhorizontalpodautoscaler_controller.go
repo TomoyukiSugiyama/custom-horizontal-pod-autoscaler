@@ -126,17 +126,6 @@ func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscal
 ) error {
 	logger := log.FromContext(ctx)
 	hpaName := customHPA.Name
-	desiredMinMaxReplicas := jobClient.GetDesiredMinMaxReplicas()
-	minReplicas := customHPA.Spec.MinReplicas
-	if desiredMinMaxReplicas.MinReplicas != nil {
-		minReplicas = desiredMinMaxReplicas.MinReplicas
-	}
-
-	maxReplicas := customHPA.Spec.MaxReplicas
-	// TODO: change MaxReplicas type to *int32
-	if desiredMinMaxReplicas.MaxReplicas != 0 {
-		maxReplicas = desiredMinMaxReplicas.MaxReplicas
-	}
 
 	hpa := &autoscalingv2.HorizontalPodAutoscaler{
 		TypeMeta: metav1.TypeMeta{
@@ -151,8 +140,8 @@ func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscal
 			},
 		},
 		Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
-			MinReplicas:    minReplicas,
-			MaxReplicas:    maxReplicas,
+			MinReplicas:    &customHPA.Status.DesiredMinReplicas,
+			MaxReplicas:    customHPA.Status.DesiredMaxReplicas,
 			ScaleTargetRef: customHPA.Spec.ScaleTargetRef,
 			Metrics:        customHPA.Spec.Metrics,
 			Behavior:       customHPA.Spec.Behavior.DeepCopy(),
