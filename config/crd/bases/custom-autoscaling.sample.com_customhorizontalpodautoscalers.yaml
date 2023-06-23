@@ -174,9 +174,6 @@ spec:
               horizontalPodAutoscalerName:
                 type: string
               maxReplicas:
-                format: int32
-                type: integer
-              maxReplicasTraining:
                 description: maxReplicas is the upper limit for the number of replicas
                   to which the autoscaler can scale up. It cannot be less that minReplicas.
                 format: int32
@@ -666,9 +663,6 @@ spec:
                   is active as long as at least one metric value is available.
                 format: int32
                 type: integer
-              minReplicasTraining:
-                format: int32
-                type: integer
               scaleTargetRef:
                 description: scaleTargetRef points to the target resource to scale,
                   and is used to the pods for which metrics should be collected, as
@@ -710,8 +704,6 @@ spec:
             required:
             - horizontalPodAutoscalerName
             - maxReplicas
-            - maxReplicasTraining
-            - minReplicasTraining
             - scaleTargetRef
             - temporaryScaleMetrics
             type: object
