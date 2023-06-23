@@ -78,26 +78,21 @@ type CustomHorizontalPodAutoscalerStatus struct {
 	// observedGeneration is the most recent generation observed by this autoscaler.
 	// +optional
 	ObservedGeneration *int64 `json:"observedGeneration,omitempty" protobuf:"varint,1,opt,name=observedGeneration"`
-
 	// lastScaleTime is the last time the HorizontalPodAutoscaler scaled the number of pods,
 	// used by the autoscaler to control how often the number of pods is changed.
 	// +optional
 	LastScaleTime *metav1.Time `json:"lastScaleTime,omitempty" protobuf:"bytes,2,opt,name=lastScaleTime"`
-
 	// currentReplicas is current number of replicas of pods managed by this autoscaler,
 	// as last seen by the autoscaler.
 	// +optional
 	CurrentReplicas int32 `json:"currentReplicas,omitempty" protobuf:"varint,3,opt,name=currentReplicas"`
-
 	// desiredReplicas is the desired number of replicas of pods managed by this autoscaler,
 	// as last calculated by the autoscaler.
 	DesiredReplicas int32 `json:"desiredReplicas" protobuf:"varint,4,opt,name=desiredReplicas"`
-
 	// currentMetrics is the last read state of the metrics used by this autoscaler.
 	// +listType=atomic
 	// +optional
 	CurrentMetrics []autoscalingv2.MetricStatus `json:"currentMetrics" protobuf:"bytes,5,rep,name=currentMetrics"`
-
 	// conditions is the set of conditions required for this autoscaler to scale its target,
 	// and indicates whether or not those conditions are met.
 	// +patchMergeKey=type
@@ -105,11 +100,23 @@ type CustomHorizontalPodAutoscalerStatus struct {
 	// +listType=map
 	// +listMapKey=type
 	// +optional
-	Conditions         []autoscalingv2.HorizontalPodAutoscalerCondition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" listType:"map" protobuf:"bytes,6,rep,name=conditions"`
-	CurrentMinReplicas int32                                            `json:"currentMinReplicas"`
-	CueerntMaxReplicas int32                                            `json:"currentMaxReplicas"`
-	DesiredMinReplicas int32                                            `json:"desiredMinReplicas"`
-	DesiredMaxReplicas int32                                            `json:"desiredMaxReplicas"`
+	Conditions []autoscalingv2.HorizontalPodAutoscalerCondition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" listType:"map" protobuf:"bytes,6,rep,name=conditions"`
+	// currentMinReplicas is current lower limit for the number of replicas to which the autoscaler can scale down,
+	// as last seen by the custom autoscaler.
+	// +optional
+	CurrentMinReplicas int32 `json:"currentMinReplicas"`
+	// currentMaxReplicas is current upper limit for the number of replicas to which the autoscaler can scale up,
+	// as last seen by the custom autoscaler.
+	// +optional
+	CueerntMaxReplicas int32 `json:"currentMaxReplicas"`
+	// desiredMinReplicas is desired lower limit for the number of replicas to which the autoscaler can scale down,
+	// as last calculated by the custom autoscaler.
+	// +optional
+	DesiredMinReplicas int32 `json:"desiredMinReplicas"`
+	// DesiredMaxReplicas is desired upper limit for the number of replicas to which the autoscaler can scale up,
+	// as last calculated by the custom autoscaler.
+	// +optional
+	DesiredMaxReplicas int32 `json:"desiredMaxReplicas"`
 }
 
 //+kubebuilder:object:root=true
