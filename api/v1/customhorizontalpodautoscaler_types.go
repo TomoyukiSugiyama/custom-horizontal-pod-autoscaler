@@ -28,11 +28,11 @@ type TemporaryScaleMetricSpec struct {
 	Type     string `json:"type"`
 	Duration string `json:"duration"`
 	// minReplicas is the lower limit for the number of replicas to which the custom autoscaler
-	// can scale down. It defaults to 1 pod.
+	// can scale up according to the temporary scale metrics. It defaults to 1 pod.
 	// +optional
 	MinReplicas *int32 `json:"minReplicas"`
 	// maxReplicas is the upper limit for the number of replicas to which the custom autoscaler
-	// can scale up. It cannot be less that minReplicas.
+	// can scale up according to the temporary scale metrics. It cannot be less that minReplicas.
 	MaxReplicas int32 `json:"maxReplicas"`
 }
 
