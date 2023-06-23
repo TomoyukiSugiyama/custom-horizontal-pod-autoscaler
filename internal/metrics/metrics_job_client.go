@@ -1,4 +1,4 @@
-package job
+package metrics
 
 import (
 	"context"
@@ -14,13 +14,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-type JobClient interface {
+type MetricsJobClient interface {
 	Start(ctx context.Context)
 	Stop()
 	GetDesiredMinMaxReplicas() apiv1.TemporaryScaleMetricSpec
 }
 
-type jobClient struct {
+type metricsJobClient struct {
 	ctrlClient                      ctrlClient.Client
 	api                             v1.API
 	interval                        time.Duration
@@ -31,25 +31,26 @@ type jobClient struct {
 	customHPA                       customautoscalingv1.CustomHorizontalPodAutoscaler
 }
 
-var _ JobClient = (*jobClient)(nil)
+var _ MetricsJobClient = (*metricsJobClient)(nil)
 
 type metricType struct {
 	duration string
 	jobType  string
 }
 
-type Option func(*jobClient)
+type Option func(*metricsJobClient)
 
-func New(opts ...Option) (JobClient, error) {
+func New(opts ...Option) (MetricsJobClient, error) {
 
 	// TODO: Need to set api address from main.
+	// TODO: Move to MetricsCollector.
 	client, err := api.NewClient(api.Config{Address: "http://localhost:9090"})
 	if err != nil {
 		return nil, err
 	}
 	api := v1.NewAPI(client)
 
-	j := &jobClient{
+	j := &metricsJobClient{
 		api:                             api,
 		interval:                        30 * time.Second,
 		stopCh:                          make(chan struct{}),
@@ -65,30 +66,30 @@ func New(opts ...Option) (JobClient, error) {
 }
 
 func WithInterval(interval time.Duration) Option {
-	return func(j *jobClient) {
+	return func(j *metricsJobClient) {
 		j.interval = interval
 	}
 }
 
 func WithQuery(query string) Option {
-	return func(j *jobClient) {
+	return func(j *metricsJobClient) {
 		j.query = query
 	}
 }
 
 func WithCtrlClient(ctrlClient ctrlClient.Client) Option {
-	return func(j *jobClient) {
+	return func(j *metricsJobClient) {
 		j.ctrlClient = ctrlClient
 	}
 }
 
 func WithCustomHPA(customHPA customautoscalingv1.CustomHorizontalPodAutoscaler) Option {
-	return func(j *jobClient) {
+	return func(j *metricsJobClient) {
 		j.customHPA = customHPA
 	}
 }
 
-func (j *jobClient) getTemporaryScaleMetrics(ctx context.Context) {
+func (j *metricsJobClient) getTemporaryScaleMetrics(ctx context.Context) {
 	logger := log.FromContext(ctx)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -130,7 +131,7 @@ func (j *jobClient) getTemporaryScaleMetrics(ctx context.Context) {
 	)
 }
 
-func (j *jobClient) perseMetrics(samples model.Vector) error {
+func (j *metricsJobClient) perseMetrics(samples model.Vector) error {
 	j.persedQueryResults = make(map[metricType]string)
 	for _, sample := range samples {
 		metrics, err := parser.ParseMetric(sample.Metric.String())
@@ -146,7 +147,7 @@ func (j *jobClient) perseMetrics(samples model.Vector) error {
 	return nil
 }
 
-func (j *jobClient) updateDesiredMinMaxReplicas() {
+func (j *metricsJobClient) updateDesiredMinMaxReplicas() {
 	for _, m := range j.customHPA.Spec.TemporaryScaleMetrics {
 		k := metricType{
 			jobType:  m.Type,
@@ -163,7 +164,7 @@ func (j *jobClient) updateDesiredMinMaxReplicas() {
 	j.desiredTemporaryScaleMetricSpec.MaxReplicas = j.customHPA.Spec.MaxReplicas
 }
 
-func (j *jobClient) updateStatus(ctx context.Context) error {
+func (j *metricsJobClient) updateStatus(ctx context.Context) error {
 	var current customautoscalingv1.CustomHorizontalPodAutoscaler
 	j.ctrlClient.Get(ctx, ctrlClient.ObjectKey{Namespace: j.customHPA.Namespace, Name: j.customHPA.Name}, &current)
 	current.Status.DesiredMinReplicas = *j.desiredTemporaryScaleMetricSpec.MinReplicas
@@ -171,11 +172,11 @@ func (j *jobClient) updateStatus(ctx context.Context) error {
 	return j.ctrlClient.Status().Update(ctx, &current)
 }
 
-func (j *jobClient) GetDesiredMinMaxReplicas() apiv1.TemporaryScaleMetricSpec {
+func (j *metricsJobClient) GetDesiredMinMaxReplicas() apiv1.TemporaryScaleMetricSpec {
 	return j.desiredTemporaryScaleMetricSpec
 }
 
-func (j *jobClient) Start(ctx context.Context) {
+func (j *metricsJobClient) Start(ctx context.Context) {
 	logger := log.FromContext(ctx)
 	logger.Info("starting job")
 	defer logger.Info("shut down job")
@@ -199,6 +200,6 @@ func (j *jobClient) Start(ctx context.Context) {
 	}
 }
 
-func (c *jobClient) Stop() {
-	close(c.stopCh)
+func (j *metricsJobClient) Stop() {
+	close(j.stopCh)
 }

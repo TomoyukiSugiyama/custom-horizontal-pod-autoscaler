@@ -36,7 +36,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
-	jobpkg "sample.com/custom-horizontal-pod-autoscaler/internal/job"
+	metricspkg "sample.com/custom-horizontal-pod-autoscaler/internal/metrics"
 )
 
 // CustomHorizontalPodAutoscalerReconciler reconciles a CustomHorizontalPodAutoscaler object
@@ -44,7 +44,7 @@ type CustomHorizontalPodAutoscalerReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 
-	jobClients map[types.NamespacedName]jobpkg.JobClient
+	metricsJobClients map[types.NamespacedName]metricspkg.MetricsJobClient
 
 	mu sync.RWMutex
 }
@@ -58,9 +58,9 @@ type Option func(*CustomHorizontalPodAutoscalerReconciler)
 func NewReconcile(Client client.Client, Scheme *runtime.Scheme, opts ...Option) *CustomHorizontalPodAutoscalerReconciler {
 
 	r := &CustomHorizontalPodAutoscalerReconciler{
-		Client:     Client,
-		Scheme:     Scheme,
-		jobClients: make(map[types.NamespacedName]jobpkg.JobClient),
+		Client:            Client,
+		Scheme:            Scheme,
+		metricsJobClients: make(map[types.NamespacedName]metricspkg.MetricsJobClient),
 	}
 
 	for _, opt := range opts {
@@ -70,9 +70,9 @@ func NewReconcile(Client client.Client, Scheme *runtime.Scheme, opts ...Option) 
 	return r
 }
 
-func WithJobClients(jobClients map[types.NamespacedName]jobpkg.JobClient) Option {
+func WithMetricsJobClients(metricsJobClients map[types.NamespacedName]metricspkg.MetricsJobClient) Option {
 	return func(r *CustomHorizontalPodAutoscalerReconciler) {
-		r.jobClients = jobClients
+		r.metricsJobClients = metricsJobClients
 	}
 }
 
@@ -88,7 +88,7 @@ func WithJobClients(jobClients map[types.NamespacedName]jobpkg.JobClient) Option
 func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 	r.mu.RLock()
-	jobClient, jobClientExists := r.jobClients[req.NamespacedName]
+	metricsJobClient, metricsJobClientExists := r.metricsJobClients[req.NamespacedName]
 	r.mu.RUnlock()
 
 	var customHPA customautoscalingv1.CustomHorizontalPodAutoscaler
@@ -103,28 +103,30 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 		return ctrl.Result{}, err
 	}
 
+	// TODO: Need to check validation of customHPA
+
 	if !customHPA.ObjectMeta.DeletionTimestamp.IsZero() {
 		return ctrl.Result{}, nil
 	}
 
-	if !jobClientExists {
+	if !metricsJobClientExists {
 		// TODO: Need to set interval from main.
-		jobClient, err = jobpkg.New(
-			jobpkg.WithInterval(30*time.Second),
-			jobpkg.WithCustomHPA(customHPA),
-			jobpkg.WithCtrlClient(r.Client),
+		metricsJobClient, err = metricspkg.New(
+			metricspkg.WithInterval(30*time.Second),
+			metricspkg.WithCustomHPA(customHPA),
+			metricspkg.WithCtrlClient(r.Client),
 		)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
-		go jobClient.Start(ctx)
+		go metricsJobClient.Start(ctx)
 		r.mu.Lock()
-		r.jobClients[req.NamespacedName] = jobClient
+		r.metricsJobClients[req.NamespacedName] = metricsJobClient
 		r.mu.Unlock()
-		logger.Info("create jobClient successfully")
+		logger.Info("create metricsJobClient successfully")
 	}
 
-	err = r.reconcileHorizontalPodAutoscaler(ctx, customHPA, jobClient)
+	err = r.reconcileHorizontalPodAutoscaler(ctx, customHPA, metricsJobClient)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -136,12 +138,12 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscaler(
 	ctx context.Context,
 	customHPA customautoscalingv1.CustomHorizontalPodAutoscaler,
-	jobClient jobpkg.JobClient,
+	metricsJobClient metricspkg.MetricsJobClient,
 ) error {
 	logger := log.FromContext(ctx)
 	hpaName := customHPA.Name
 
-	desiredMinMaxReplicas := jobClient.GetDesiredMinMaxReplicas()
+	desiredMinMaxReplicas := metricsJobClient.GetDesiredMinMaxReplicas()
 	minReplicas := customHPA.Spec.MinReplicas
 	if desiredMinMaxReplicas.MinReplicas != nil {
 		minReplicas = desiredMinMaxReplicas.MinReplicas
@@ -222,6 +224,7 @@ func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(
 		return ctrl.Result{}, err
 	}
 
+	// TODO: Need to set initial value to CurrentReplicas
 	status := customautoscalingv1.CustomHorizontalPodAutoscalerStatus{
 		CurrentReplicas:    current.Status.CurrentReplicas,
 		DesiredReplicas:    current.Status.DesiredReplicas,

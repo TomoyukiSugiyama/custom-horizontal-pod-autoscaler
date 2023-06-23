@@ -18,7 +18,7 @@ import (
 
 	apiv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
 	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
-	jobpkg "sample.com/custom-horizontal-pod-autoscaler/internal/job"
+	metricspkg "sample.com/custom-horizontal-pod-autoscaler/internal/metrics"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
@@ -53,11 +53,11 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 			MinReplicas: pointer.Int32(1),
 			MaxReplicas: int32(5),
 		}
-		fakeJobClient := jobpkg.FakeNew(desiredSpec)
+		fakeMetricsJobClient := metricspkg.FakeNew(desiredSpec)
 		namespacedName := types.NamespacedName{Namespace: "dummy-namespace", Name: "sample"}
-		fakeJobClients := map[types.NamespacedName]jobpkg.JobClient{namespacedName: fakeJobClient}
+		fakeMetricsJobClients := map[types.NamespacedName]metricspkg.MetricsJobClient{namespacedName: fakeMetricsJobClient}
 
-		reconciler := NewReconcile(k8sClient, scheme.Scheme, WithJobClients(fakeJobClients))
+		reconciler := NewReconcile(k8sClient, scheme.Scheme, WithMetricsJobClients(fakeMetricsJobClients))
 
 		err = reconciler.SetupWithManager(mgr)
 		Expect(err).NotTo(HaveOccurred())
