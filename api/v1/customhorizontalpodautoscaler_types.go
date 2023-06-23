@@ -48,7 +48,9 @@ type CustomHorizontalPodAutoscalerSpec struct {
 	// +optional
 	MinReplicas         *int32 `json:"minReplicas,omitempty" protobuf:"varint,2,opt,name=minReplicas"`
 	MinReplicasTraining *int32 `json:"minReplicasTraining"`
-	MaxReplicas         int32  `json:"maxReplicas" protobuf:"varint,3,opt,name=maxReplicas"`
+	// maxReplicas is the upper limit for the number of replicas to which the autoscaler can scale up.
+	// It cannot be less that minReplicas.
+	MaxReplicas int32 `json:"maxReplicas" protobuf:"varint,3,opt,name=maxReplicas"`
 	// maxReplicas is the upper limit for the number of replicas to which the autoscaler can scale up.
 	// It cannot be less that minReplicas.
 	MaxReplicasTraining int32 `json:"maxReplicasTraining"`
