@@ -103,6 +103,8 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 		return ctrl.Result{}, err
 	}
 
+	// TODO: Need to check validation of customHPA
+
 	if !customHPA.ObjectMeta.DeletionTimestamp.IsZero() {
 		return ctrl.Result{}, nil
 	}
@@ -222,6 +224,7 @@ func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(
 		return ctrl.Result{}, err
 	}
 
+	// TODO: Need to set initial value to CurrentReplicas
 	status := customautoscalingv1.CustomHorizontalPodAutoscalerStatus{
 		CurrentReplicas:    current.Status.CurrentReplicas,
 		DesiredReplicas:    current.Status.DesiredReplicas,

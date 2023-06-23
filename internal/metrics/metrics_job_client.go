@@ -43,6 +43,7 @@ type Option func(*metricsJobClient)
 func New(opts ...Option) (MetricsJobClient, error) {
 
 	// TODO: Need to set api address from main.
+	// TODO: Move to MetricsCollector.
 	client, err := api.NewClient(api.Config{Address: "http://localhost:9090"})
 	if err != nil {
 		return nil, err
