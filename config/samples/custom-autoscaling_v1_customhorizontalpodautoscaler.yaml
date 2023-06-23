@@ -16,8 +16,6 @@ spec:
     name: sample-deployment
   minReplicas: 2
   maxReplicas: 4
-  minReplicasTraining: 5
-  maxReplicasTraining: 10
   metrics:
   - type: Pods
     pods:
