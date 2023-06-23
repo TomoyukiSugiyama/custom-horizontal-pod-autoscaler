@@ -18,7 +18,7 @@ import (
 
 	apiv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
 	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
-	jobpkg "sample.com/custom-horizontal-pod-autoscaler/internal/job"
+	jobpkg "sample.com/custom-horizontal-pod-autoscaler/internal/metrics"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 

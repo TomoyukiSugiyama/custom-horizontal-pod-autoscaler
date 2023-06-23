@@ -36,7 +36,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
-	jobpkg "sample.com/custom-horizontal-pod-autoscaler/internal/job"
+	jobpkg "sample.com/custom-horizontal-pod-autoscaler/internal/metrics"
 )
 
 // CustomHorizontalPodAutoscalerReconciler reconciles a CustomHorizontalPodAutoscaler object

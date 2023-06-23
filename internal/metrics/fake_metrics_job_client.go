@@ -1,4 +1,4 @@
-package job
+package metrics
 
 import (
 	"context"
