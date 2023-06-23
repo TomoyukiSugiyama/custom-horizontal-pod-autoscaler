@@ -25,10 +25,15 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 type TemporaryScaleMetricSpec struct {
-	Type        string `json:"type"`
-	Duration    string `json:"duration"`
+	Type     string `json:"type"`
+	Duration string `json:"duration"`
+	// minReplicas is the lower limit for the number of replicas to which the custom autoscaler
+	// can scale down. It defaults to 1 pod.
+	// +optional
 	MinReplicas *int32 `json:"minReplicas"`
-	MaxReplicas int32  `json:"maxReplicas"`
+	// maxReplicas is the upper limit for the number of replicas to which the custom autoscaler
+	// can scale up. It cannot be less that minReplicas.
+	MaxReplicas int32 `json:"maxReplicas"`
 }
 
 // CustomHorizontalPodAutoscalerSpec defines the desired state of CustomHorizontalPodAutoscaler
@@ -60,9 +65,14 @@ type CustomHorizontalPodAutoscalerSpec struct {
 	// If not set, the default metric will be set to 80% average CPU utilization.
 	// +listType=atomic
 	// +optional
-	Metrics               []autoscalingv2.MetricSpec `json:"metrics,omitempty" protobuf:"bytes,4,rep,name=metrics"`
+	Metrics []autoscalingv2.MetricSpec `json:"metrics,omitempty" protobuf:"bytes,4,rep,name=metrics"`
+	// If temporaryScaleMetrics is set, the minReplicas and maxReplicas of temporaryScaleMetrics are used
+	// in preference to the minReplicas and maxReplicas of spec only when the corresponding metrics
+	// for name and duration of temporaryScaleMetrics are 1.
+	// If not set, the default minReplicas and maxReplicas of spec are used.
+	// +listType=atomic
+	// +optional
 	TemporaryScaleMetrics []TemporaryScaleMetricSpec `json:"temporaryScaleMetrics"`
-
 	// behavior configures the scaling behavior of the target
 	// in both Up and Down directions (scaleUp and scaleDown fields respectively).
 	// If not set, the default HPAScalingRules for scale up and scale down are used.
@@ -113,7 +123,7 @@ type CustomHorizontalPodAutoscalerStatus struct {
 	// as last calculated by the custom autoscaler.
 	// +optional
 	DesiredMinReplicas int32 `json:"desiredMinReplicas"`
-	// DesiredMaxReplicas is desired upper limit for the number of replicas to which the autoscaler can scale up,
+	// desiredMaxReplicas is desired upper limit for the number of replicas to which the autoscaler can scale up,
 	// as last calculated by the custom autoscaler.
 	// +optional
 	DesiredMaxReplicas int32 `json:"desiredMaxReplicas"`

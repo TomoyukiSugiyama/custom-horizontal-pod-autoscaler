@@ -682,14 +682,25 @@ spec:
                 - name
                 type: object
               temporaryScaleMetrics:
+                description: If temporaryScaleMetrics is set, the minReplicas and
+                  maxReplicas of temporaryScaleMetrics are used in preference to the
+                  minReplicas and maxReplicas of spec only when the corresponding
+                  metrics for name and duration of temporaryScaleMetrics are 1. If
+                  not set, the default minReplicas and maxReplicas of spec are used.
                 items:
                   properties:
                     duration:
                       type: string
                     maxReplicas:
+                      description: maxReplicas is the upper limit for the number of
+                        replicas to which the custom autoscaler can scale up. It cannot
+                        be less that minReplicas.
                       format: int32
                       type: integer
                     minReplicas:
+                      description: minReplicas is the lower limit for the number of
+                        replicas to which the custom autoscaler can scale down. It
+                        defaults to 1 pod.
                       format: int32
                       type: integer
                     type:
@@ -697,15 +708,14 @@ spec:
                   required:
                   - duration
                   - maxReplicas
-                  - minReplicas
                   - type
                   type: object
                 type: array
+                x-kubernetes-list-type: atomic
             required:
             - horizontalPodAutoscalerName
             - maxReplicas
             - scaleTargetRef
-            - temporaryScaleMetrics
             type: object
           status:
             description: CustomHorizontalPodAutoscalerStatus defines the observed
@@ -1197,7 +1207,7 @@ spec:
                 format: int32
                 type: integer
               desiredMaxReplicas:
-                description: DesiredMaxReplicas is desired upper limit for the number
+                description: desiredMaxReplicas is desired upper limit for the number
                   of replicas to which the autoscaler can scale up, as last calculated
                   by the custom autoscaler.
                 format: int32
