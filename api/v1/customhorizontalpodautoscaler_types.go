@@ -25,10 +25,19 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 type TemporaryScaleMetricSpec struct {
-	Type        string `json:"type"`
-	Duration    string `json:"duration"`
+	// Type is the name of the target metric that determines the upper and lower limits
+	// of the number of pods during a temporary scale.
+	Type string `json:"type"`
+	// duration is a label indicating the duration of the target metric that determines
+	// the upper and lower limits of the number of pods during the temporary scale.
+	Duration string `json:"duration"`
+	// minReplicas is the lower limit for the number of replicas to which the custom autoscaler
+	// can scale up according to the temporary scale metrics. It defaults to 1 pod.
+	// +optional
 	MinReplicas *int32 `json:"minReplicas"`
-	MaxReplicas int32  `json:"maxReplicas"`
+	// maxReplicas is the upper limit for the number of replicas to which the custom autoscaler
+	// can scale up according to the temporary scale metrics. It cannot be less that minReplicas.
+	MaxReplicas int32 `json:"maxReplicas"`
 }
 
 // CustomHorizontalPodAutoscalerSpec defines the desired state of CustomHorizontalPodAutoscaler
@@ -46,12 +55,10 @@ type CustomHorizontalPodAutoscalerSpec struct {
 	// metric is configured.  Scaling is active as long as at least one metric value is
 	// available.
 	// +optional
-	MinReplicas         *int32 `json:"minReplicas,omitempty" protobuf:"varint,2,opt,name=minReplicas"`
-	MinReplicasTraining *int32 `json:"minReplicasTraining"`
-	MaxReplicas         int32  `json:"maxReplicas" protobuf:"varint,3,opt,name=maxReplicas"`
+	MinReplicas *int32 `json:"minReplicas,omitempty" protobuf:"varint,2,opt,name=minReplicas"`
 	// maxReplicas is the upper limit for the number of replicas to which the autoscaler can scale up.
 	// It cannot be less that minReplicas.
-	MaxReplicasTraining int32 `json:"maxReplicasTraining"`
+	MaxReplicas int32 `json:"maxReplicas" protobuf:"varint,3,opt,name=maxReplicas"`
 	// metrics contains the specifications for which to use to calculate the
 	// desired replica count (the maximum replica count across all metrics will
 	// be used).  The desired replica count is calculated multiplying the
@@ -62,9 +69,14 @@ type CustomHorizontalPodAutoscalerSpec struct {
 	// If not set, the default metric will be set to 80% average CPU utilization.
 	// +listType=atomic
 	// +optional
-	Metrics               []autoscalingv2.MetricSpec `json:"metrics,omitempty" protobuf:"bytes,4,rep,name=metrics"`
+	Metrics []autoscalingv2.MetricSpec `json:"metrics,omitempty" protobuf:"bytes,4,rep,name=metrics"`
+	// If temporaryScaleMetrics is set, the minReplicas and maxReplicas of temporaryScaleMetrics are used
+	// in preference to the minReplicas and maxReplicas of spec only when the corresponding metrics
+	// for name and duration of temporaryScaleMetrics are 1.
+	// If not set, the default minReplicas and maxReplicas of spec are used.
+	// +listType=atomic
+	// +optional
 	TemporaryScaleMetrics []TemporaryScaleMetricSpec `json:"temporaryScaleMetrics"`
-
 	// behavior configures the scaling behavior of the target
 	// in both Up and Down directions (scaleUp and scaleDown fields respectively).
 	// If not set, the default HPAScalingRules for scale up and scale down are used.
@@ -80,26 +92,21 @@ type CustomHorizontalPodAutoscalerStatus struct {
 	// observedGeneration is the most recent generation observed by this autoscaler.
 	// +optional
 	ObservedGeneration *int64 `json:"observedGeneration,omitempty" protobuf:"varint,1,opt,name=observedGeneration"`
-
 	// lastScaleTime is the last time the HorizontalPodAutoscaler scaled the number of pods,
 	// used by the autoscaler to control how often the number of pods is changed.
 	// +optional
 	LastScaleTime *metav1.Time `json:"lastScaleTime,omitempty" protobuf:"bytes,2,opt,name=lastScaleTime"`
-
 	// currentReplicas is current number of replicas of pods managed by this autoscaler,
 	// as last seen by the autoscaler.
 	// +optional
 	CurrentReplicas int32 `json:"currentReplicas,omitempty" protobuf:"varint,3,opt,name=currentReplicas"`
-
 	// desiredReplicas is the desired number of replicas of pods managed by this autoscaler,
 	// as last calculated by the autoscaler.
 	DesiredReplicas int32 `json:"desiredReplicas" protobuf:"varint,4,opt,name=desiredReplicas"`
-
 	// currentMetrics is the last read state of the metrics used by this autoscaler.
 	// +listType=atomic
 	// +optional
 	CurrentMetrics []autoscalingv2.MetricStatus `json:"currentMetrics" protobuf:"bytes,5,rep,name=currentMetrics"`
-
 	// conditions is the set of conditions required for this autoscaler to scale its target,
 	// and indicates whether or not those conditions are met.
 	// +patchMergeKey=type
@@ -107,11 +114,23 @@ type CustomHorizontalPodAutoscalerStatus struct {
 	// +listType=map
 	// +listMapKey=type
 	// +optional
-	Conditions         []autoscalingv2.HorizontalPodAutoscalerCondition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" listType:"map" protobuf:"bytes,6,rep,name=conditions"`
-	CurrentMinReplicas int32                                            `json:"currentMinReplicas"`
-	CueerntMaxReplicas int32                                            `json:"currentMaxReplicas"`
-	DesiredMinReplicas int32                                            `json:"desiredMinReplicas"`
-	DesiredMaxReplicas int32                                            `json:"desiredMaxReplicas"`
+	Conditions []autoscalingv2.HorizontalPodAutoscalerCondition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" listType:"map" protobuf:"bytes,6,rep,name=conditions"`
+	// currentMinReplicas is current lower limit for the number of replicas to which the autoscaler can scale down,
+	// as last seen by the custom autoscaler.
+	// +optional
+	CurrentMinReplicas int32 `json:"currentMinReplicas"`
+	// currentMaxReplicas is current upper limit for the number of replicas to which the autoscaler can scale up,
+	// as last seen by the custom autoscaler.
+	// +optional
+	CueerntMaxReplicas int32 `json:"currentMaxReplicas"`
+	// desiredMinReplicas is desired lower limit for the number of replicas to which the autoscaler can scale down,
+	// as last calculated by the custom autoscaler.
+	// +optional
+	DesiredMinReplicas int32 `json:"desiredMinReplicas"`
+	// desiredMaxReplicas is desired upper limit for the number of replicas to which the autoscaler can scale up,
+	// as last calculated by the custom autoscaler.
+	// +optional
+	DesiredMaxReplicas int32 `json:"desiredMaxReplicas"`
 }
 
 //+kubebuilder:object:root=true

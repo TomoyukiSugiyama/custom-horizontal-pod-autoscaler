@@ -81,9 +81,7 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 
 func newCustomHorizontalPodAutoscaler() *customautoscalingv1.CustomHorizontalPodAutoscaler {
 	minReplicas := int32(1)
-	minReplicasTraining := int32(7)
 	maxReplicas := int32(5)
-	maxReplicasTraining := int32(10)
 	scaleTargetRef := autoscalingv2.CrossVersionObjectReference{
 		APIVersion: "apps/v1",
 		Kind:       "Deployment",
@@ -129,9 +127,7 @@ func newCustomHorizontalPodAutoscaler() *customautoscalingv1.CustomHorizontalPod
 		},
 		Spec: customautoscalingv1.CustomHorizontalPodAutoscalerSpec{
 			MinReplicas:           &minReplicas,
-			MinReplicasTraining:   &minReplicasTraining,
 			MaxReplicas:           maxReplicas,
-			MaxReplicasTraining:   maxReplicasTraining,
 			ScaleTargetRef:        scaleTargetRef,
 			Metrics:               metrics,
 			TemporaryScaleMetrics: temporaryScaleMetrics,

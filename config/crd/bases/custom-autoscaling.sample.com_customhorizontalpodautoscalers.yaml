@@ -174,9 +174,6 @@ spec:
               horizontalPodAutoscalerName:
                 type: string
               maxReplicas:
-                format: int32
-                type: integer
-              maxReplicasTraining:
                 description: maxReplicas is the upper limit for the number of replicas
                   to which the autoscaler can scale up. It cannot be less that minReplicas.
                 format: int32
@@ -666,9 +663,6 @@ spec:
                   is active as long as at least one metric value is available.
                 format: int32
                 type: integer
-              minReplicasTraining:
-                format: int32
-                type: integer
               scaleTargetRef:
                 description: scaleTargetRef points to the target resource to scale,
                   and is used to the pods for which metrics should be collected, as
@@ -688,32 +682,46 @@ spec:
                 - name
                 type: object
               temporaryScaleMetrics:
+                description: If temporaryScaleMetrics is set, the minReplicas and
+                  maxReplicas of temporaryScaleMetrics are used in preference to the
+                  minReplicas and maxReplicas of spec only when the corresponding
+                  metrics for name and duration of temporaryScaleMetrics are 1. If
+                  not set, the default minReplicas and maxReplicas of spec are used.
                 items:
                   properties:
                     duration:
+                      description: duration is a label indicating the duration of
+                        the target metric that determines the upper and lower limits
+                        of the number of pods during the temporary scale.
                       type: string
                     maxReplicas:
+                      description: maxReplicas is the upper limit for the number of
+                        replicas to which the custom autoscaler can scale up according
+                        to the temporary scale metrics. It cannot be less that minReplicas.
                       format: int32
                       type: integer
                     minReplicas:
+                      description: minReplicas is the lower limit for the number of
+                        replicas to which the custom autoscaler can scale up according
+                        to the temporary scale metrics. It defaults to 1 pod.
                       format: int32
                       type: integer
                     type:
+                      description: Type is the name of the target metric that determines
+                        the upper and lower limits of the number of pods during a
+                        temporary scale.
                       type: string
                   required:
                   - duration
                   - maxReplicas
-                  - minReplicas
                   - type
                   type: object
                 type: array
+                x-kubernetes-list-type: atomic
             required:
             - horizontalPodAutoscalerName
             - maxReplicas
-            - maxReplicasTraining
-            - minReplicasTraining
             - scaleTargetRef
-            - temporaryScaleMetrics
             type: object
           status:
             description: CustomHorizontalPodAutoscalerStatus defines the observed
@@ -755,6 +763,9 @@ spec:
                 - type
                 x-kubernetes-list-type: map
               currentMaxReplicas:
+                description: currentMaxReplicas is current upper limit for the number
+                  of replicas to which the autoscaler can scale up, as last seen by
+                  the custom autoscaler.
                 format: int32
                 type: integer
               currentMetrics:
@@ -1191,6 +1202,9 @@ spec:
                 type: array
                 x-kubernetes-list-type: atomic
               currentMinReplicas:
+                description: currentMinReplicas is current lower limit for the number
+                  of replicas to which the autoscaler can scale down, as last seen
+                  by the custom autoscaler.
                 format: int32
                 type: integer
               currentReplicas:
@@ -1199,9 +1213,15 @@ spec:
                 format: int32
                 type: integer
               desiredMaxReplicas:
+                description: desiredMaxReplicas is desired upper limit for the number
+                  of replicas to which the autoscaler can scale up, as last calculated
+                  by the custom autoscaler.
                 format: int32
                 type: integer
               desiredMinReplicas:
+                description: desiredMinReplicas is desired lower limit for the number
+                  of replicas to which the autoscaler can scale down, as last calculated
+                  by the custom autoscaler.
                 format: int32
                 type: integer
               desiredReplicas:
@@ -1221,10 +1241,6 @@ spec:
                 format: int64
                 type: integer
             required:
-            - currentMaxReplicas
-            - currentMinReplicas
-            - desiredMaxReplicas
-            - desiredMinReplicas
             - desiredReplicas
             type: object
         type: object

@@ -94,11 +94,6 @@ func (in *CustomHorizontalPodAutoscalerSpec) DeepCopyInto(out *CustomHorizontalP
 		*out = new(int32)
 		**out = **in
 	}
-	if in.MinReplicasTraining != nil {
-		in, out := &in.MinReplicasTraining, &out.MinReplicasTraining
-		*out = new(int32)
-		**out = **in
-	}
 	if in.Metrics != nil {
 		in, out := &in.Metrics, &out.Metrics
 		*out = make([]v2.MetricSpec, len(*in))
