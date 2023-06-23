@@ -23,7 +23,7 @@ func FakeNew(desiredTemporaryScaleMetricSpec apiv1.TemporaryScaleMetricSpec) *Fa
 func (j *FakeMetricsJobClient) Start(ctx context.Context) {
 }
 
-func (c *FakeMetricsJobClient) Stop() {
+func (j *FakeMetricsJobClient) Stop() {
 }
 
 func (j *FakeMetricsJobClient) GetDesiredMinMaxReplicas() apiv1.TemporaryScaleMetricSpec {
