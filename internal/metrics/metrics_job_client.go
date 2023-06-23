@@ -199,6 +199,6 @@ func (j *metricsJobClient) Start(ctx context.Context) {
 	}
 }
 
-func (c *metricsJobClient) Stop() {
-	close(c.stopCh)
+func (j *metricsJobClient) Stop() {
+	close(j.stopCh)
 }
