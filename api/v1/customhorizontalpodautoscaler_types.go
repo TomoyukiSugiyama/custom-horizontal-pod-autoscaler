@@ -25,7 +25,11 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 type TemporaryScaleMetricSpec struct {
-	Type     string `json:"type"`
+	// Type is the name of the target metric that determines the upper and lower limits
+	// of the number of pods during a temporary scale.
+	Type string `json:"type"`
+	// duration is a label indicating the duration of the target metric that determines
+	// the upper and lower limits of the number of pods during the temporary scale.
 	Duration string `json:"duration"`
 	// minReplicas is the lower limit for the number of replicas to which the custom autoscaler
 	// can scale up according to the temporary scale metrics. It defaults to 1 pod.
