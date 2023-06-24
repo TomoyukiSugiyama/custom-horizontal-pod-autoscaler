@@ -16,6 +16,8 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	prometheusapi "github.com/prometheus/client_golang/api"
+	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	apiv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
 	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
 	metricspkg "sample.com/custom-horizontal-pod-autoscaler/internal/metrics"
@@ -57,7 +59,16 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 		namespacedName := types.NamespacedName{Namespace: "dummy-namespace", Name: "sample"}
 		fakeMetricsJobClients := map[types.NamespacedName]metricspkg.MetricsJobClient{namespacedName: fakeMetricsJobClient}
 
-		reconciler := NewReconcile(k8sClient, scheme.Scheme, WithMetricsJobClients(fakeMetricsJobClients))
+		client, err := prometheusapi.NewClient(prometheusapi.Config{Address: "http://localhost:9090"})
+		Expect(err).NotTo(HaveOccurred())
+
+		api := prometheusv1.NewAPI(client)
+		collector, err := metricspkg.NewCollector(api)
+		Expect(err).NotTo(HaveOccurred())
+
+		go collector.Start(ctx)
+
+		reconciler := NewReconcile(k8sClient, scheme.Scheme, collector, WithMetricsJobClients(fakeMetricsJobClients))
 
 		err = reconciler.SetupWithManager(mgr)
 		Expect(err).NotTo(HaveOccurred())

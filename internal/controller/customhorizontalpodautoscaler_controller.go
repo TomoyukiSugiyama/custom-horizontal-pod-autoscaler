@@ -42,8 +42,8 @@ import (
 // CustomHorizontalPodAutoscalerReconciler reconciles a CustomHorizontalPodAutoscaler object
 type CustomHorizontalPodAutoscalerReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
-
+	Scheme            *runtime.Scheme
+	metricsCollector  metricspkg.MetricsCollector
 	metricsJobClients map[types.NamespacedName]metricspkg.MetricsJobClient
 
 	mu sync.RWMutex
@@ -55,11 +55,12 @@ type Option func(*CustomHorizontalPodAutoscalerReconciler)
 //+kubebuilder:rbac:groups=custom-autoscaling.sample.com,resources=customhorizontalpodautoscalers/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=custom-autoscaling.sample.com,resources=customhorizontalpodautoscalers/finalizers,verbs=update
 
-func NewReconcile(Client client.Client, Scheme *runtime.Scheme, opts ...Option) *CustomHorizontalPodAutoscalerReconciler {
+func NewReconcile(Client client.Client, Scheme *runtime.Scheme, metricsCollector metricspkg.MetricsCollector, opts ...Option) *CustomHorizontalPodAutoscalerReconciler {
 
 	r := &CustomHorizontalPodAutoscalerReconciler{
 		Client:            Client,
 		Scheme:            Scheme,
+		metricsCollector:  metricsCollector,
 		metricsJobClients: make(map[types.NamespacedName]metricspkg.MetricsJobClient),
 	}
 
@@ -112,6 +113,7 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 	if !metricsJobClientExists {
 		// TODO: Need to set interval from main.
 		metricsJobClient, err = metricspkg.New(
+			r.metricsCollector,
 			metricspkg.WithInterval(30*time.Second),
 			metricspkg.WithCustomHPA(customHPA),
 			metricspkg.WithCtrlClient(r.Client),
