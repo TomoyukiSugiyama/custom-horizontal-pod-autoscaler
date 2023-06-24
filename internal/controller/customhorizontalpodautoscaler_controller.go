@@ -119,9 +119,9 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 		// TODO: Need to set interval from main.
 		metricsJobClient, err = metricspkg.New(
 			r.metricsCollector,
+			r.Client,
+			req.NamespacedName,
 			metricspkg.WithInterval(30*time.Second),
-			metricspkg.WithCustomHPA(customHPA),
-			metricspkg.WithCtrlClient(r.Client),
 		)
 		if err != nil {
 			return ctrl.Result{}, err

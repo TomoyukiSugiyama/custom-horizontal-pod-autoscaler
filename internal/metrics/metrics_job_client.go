@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"k8s.io/apimachinery/pkg/types"
 	apiv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
 	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
 	ctrlClient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -22,18 +23,20 @@ type metricsJobClient struct {
 	interval                        time.Duration
 	stopCh                          chan struct{}
 	desiredTemporaryScaleMetricSpec apiv1.TemporaryScaleMetricSpec
-	customHPA                       customautoscalingv1.CustomHorizontalPodAutoscaler
+	namespacedName                  types.NamespacedName
 }
 
 var _ MetricsJobClient = (*metricsJobClient)(nil)
 
 type Option func(*metricsJobClient)
 
-func New(metricsCollector MetricsCollector, opts ...Option) (MetricsJobClient, error) {
+func New(metricsCollector MetricsCollector, ctrlClient ctrlClient.Client, namespacedName types.NamespacedName, opts ...Option) (MetricsJobClient, error) {
 	j := &metricsJobClient{
 		interval:                        30 * time.Second,
 		stopCh:                          make(chan struct{}),
 		metricsCollector:                metricsCollector,
+		ctrlClient:                      ctrlClient,
+		namespacedName:                  namespacedName,
 		desiredTemporaryScaleMetricSpec: apiv1.TemporaryScaleMetricSpec{},
 	}
 
@@ -50,25 +53,16 @@ func WithInterval(interval time.Duration) Option {
 	}
 }
 
-func WithCtrlClient(ctrlClient ctrlClient.Client) Option {
-	return func(j *metricsJobClient) {
-		j.ctrlClient = ctrlClient
-	}
-}
-
-func WithCustomHPA(customHPA customautoscalingv1.CustomHorizontalPodAutoscaler) Option {
-	return func(j *metricsJobClient) {
-		j.customHPA = customHPA
-	}
-}
-
 func (j *metricsJobClient) getTemporaryScaleMetrics(ctx context.Context) {
 	logger := log.FromContext(ctx)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	j.updateDesiredMinMaxReplicas()
+	var current customautoscalingv1.CustomHorizontalPodAutoscaler
+	j.ctrlClient.Get(ctx, j.namespacedName, &current)
 
-	for _, metric := range j.customHPA.Spec.TemporaryScaleMetrics {
+	// ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// defer cancel()
+	j.updateDesiredMinMaxReplicas(ctx)
+
+	for _, metric := range current.Spec.TemporaryScaleMetrics {
 		logger.Info(
 			"customHPA settings",
 			"duration", metric.Duration,
@@ -85,9 +79,11 @@ func (j *metricsJobClient) getTemporaryScaleMetrics(ctx context.Context) {
 	)
 }
 
-func (j *metricsJobClient) updateDesiredMinMaxReplicas() {
-	// TODO: Need to get customHPA from ctrlClient
-	for _, m := range j.customHPA.Spec.TemporaryScaleMetrics {
+func (j *metricsJobClient) updateDesiredMinMaxReplicas(ctx context.Context) {
+	var current customautoscalingv1.CustomHorizontalPodAutoscaler
+	j.ctrlClient.Get(ctx, j.namespacedName, &current)
+
+	for _, m := range current.Spec.TemporaryScaleMetrics {
 		k := metricType{
 			jobType:  m.Type,
 			duration: m.Duration,
@@ -100,13 +96,13 @@ func (j *metricsJobClient) updateDesiredMinMaxReplicas() {
 			return
 		}
 	}
-	j.desiredTemporaryScaleMetricSpec.MinReplicas = j.customHPA.Spec.MinReplicas
-	j.desiredTemporaryScaleMetricSpec.MaxReplicas = j.customHPA.Spec.MaxReplicas
+	j.desiredTemporaryScaleMetricSpec.MinReplicas = current.Spec.MinReplicas
+	j.desiredTemporaryScaleMetricSpec.MaxReplicas = current.Spec.MaxReplicas
 }
 
 func (j *metricsJobClient) updateStatus(ctx context.Context) error {
 	var current customautoscalingv1.CustomHorizontalPodAutoscaler
-	j.ctrlClient.Get(ctx, ctrlClient.ObjectKey{Namespace: j.customHPA.Namespace, Name: j.customHPA.Name}, &current)
+	j.ctrlClient.Get(ctx, j.namespacedName, &current)
 	current.Status.DesiredMinReplicas = *j.desiredTemporaryScaleMetricSpec.MinReplicas
 	current.Status.DesiredMaxReplicas = j.desiredTemporaryScaleMetricSpec.MaxReplicas
 	return j.ctrlClient.Status().Update(ctx, &current)
