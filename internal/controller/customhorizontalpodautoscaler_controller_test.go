@@ -56,7 +56,7 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 			MaxReplicas: int32(5),
 		}
 		fakeMetricsJobClient := metricspkg.FakeNew(desiredSpec)
-		namespacedName := types.NamespacedName{Namespace: "dummy-namespace", Name: "sample"}
+		namespacedName := types.NamespacedName{Namespace: "dummy-namespace", Name: "test-customhpa"}
 		fakeMetricsJobClients := map[types.NamespacedName]metricspkg.MetricsJobClient{namespacedName: fakeMetricsJobClient}
 
 		client, err := prometheusapi.NewClient(prometheusapi.Config{Address: "http://localhost:9090"})
@@ -133,7 +133,7 @@ func newCustomHorizontalPodAutoscaler() *customautoscalingv1.CustomHorizontalPod
 
 	return &customautoscalingv1.CustomHorizontalPodAutoscaler{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "sample",
+			Name:      "test-customhpa",
 			Namespace: "dummy-namespace",
 		},
 		Spec: customautoscalingv1.CustomHorizontalPodAutoscalerSpec{
