@@ -147,6 +147,7 @@ func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscal
 	customHPA customautoscalingv1.CustomHorizontalPodAutoscaler,
 	metricsJobClient metricspkg.MetricsJobClient,
 ) error {
+	// TODO: reconcile hpa if hpa is deleted.
 	logger := log.FromContext(ctx)
 	hpaName := customHPA.Name
 
