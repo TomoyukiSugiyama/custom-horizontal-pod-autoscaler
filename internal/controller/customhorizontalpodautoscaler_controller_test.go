@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"os"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -61,16 +60,11 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 		fakeMetricsJobClients := map[types.NamespacedName]metricspkg.MetricsJobClient{namespacedName: fakeMetricsJobClient}
 
 		client, err := prometheusapi.NewClient(prometheusapi.Config{Address: "http://localhost:9090"})
-		if err != nil {
-			//setupLog.Error(err, "unable to create new prometheus client")
-			os.Exit(1)
-		}
+		Expect(err).NotTo(HaveOccurred())
+
 		api := prometheusv1.NewAPI(client)
 		collector, err := metricspkg.NewCollector(api)
-		if err != nil {
-			//setupLog.Error(err, "unable to create new metrics collector")
-			os.Exit(1)
-		}
+		Expect(err).NotTo(HaveOccurred())
 
 		go collector.Start(ctx)
 
