@@ -237,7 +237,6 @@ func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(
 		return ctrl.Result{}, err
 	}
 
-	// TODO: Need to set initial value to CurrentReplicas
 	status := customautoscalingv1.CustomHorizontalPodAutoscalerStatus{
 		CurrentReplicas:    currentHPA.Status.CurrentReplicas,
 		DesiredReplicas:    currentHPA.Status.DesiredReplicas,
