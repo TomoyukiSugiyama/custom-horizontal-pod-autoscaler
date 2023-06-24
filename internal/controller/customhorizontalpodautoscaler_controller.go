@@ -147,7 +147,6 @@ func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscal
 	customHPA customautoscalingv1.CustomHorizontalPodAutoscaler,
 	metricsJobClient metricspkg.MetricsJobClient,
 ) error {
-	// TODO: reconcile hpa if hpa is deleted.
 	logger := log.FromContext(ctx)
 	hpaName := customHPA.Spec.HorizontalPodAutoscalerName
 
@@ -226,37 +225,43 @@ func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(
 	ctx context.Context,
 	customHPA customautoscalingv1.CustomHorizontalPodAutoscaler,
 ) (ctrl.Result, error) {
-	var current autoscalingv2.HorizontalPodAutoscaler
-	err := r.Get(ctx, client.ObjectKey{Namespace: customHPA.Namespace, Name: customHPA.Spec.HorizontalPodAutoscalerName}, &current)
+
+	var currendCustomHPA customautoscalingv1.CustomHorizontalPodAutoscaler
+	err := r.Get(ctx, client.ObjectKey{Namespace: customHPA.Namespace, Name: customHPA.Name}, &currendCustomHPA)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	var currentHPA autoscalingv2.HorizontalPodAutoscaler
+	err = r.Get(ctx, client.ObjectKey{Namespace: currendCustomHPA.Namespace, Name: currendCustomHPA.Spec.HorizontalPodAutoscalerName}, &currentHPA)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
 	// TODO: Need to set initial value to CurrentReplicas
 	status := customautoscalingv1.CustomHorizontalPodAutoscalerStatus{
-		CurrentReplicas:    current.Status.CurrentReplicas,
-		DesiredReplicas:    current.Status.DesiredReplicas,
-		CurrentMinReplicas: *current.Spec.MinReplicas,
-		DesiredMinReplicas: customHPA.Status.DesiredMinReplicas,
-		CueerntMaxReplicas: current.Spec.MaxReplicas,
-		DesiredMaxReplicas: customHPA.Status.DesiredMaxReplicas,
-		LastScaleTime:      current.Status.LastScaleTime,
-		CurrentMetrics:     current.Status.CurrentMetrics,
-		Conditions:         current.Status.Conditions,
-		ObservedGeneration: current.Status.ObservedGeneration,
+		CurrentReplicas:    currentHPA.Status.CurrentReplicas,
+		DesiredReplicas:    currentHPA.Status.DesiredReplicas,
+		CurrentMinReplicas: *currentHPA.Spec.MinReplicas,
+		DesiredMinReplicas: currendCustomHPA.Status.DesiredMinReplicas,
+		CueerntMaxReplicas: currentHPA.Spec.MaxReplicas,
+		DesiredMaxReplicas: currendCustomHPA.Status.DesiredMaxReplicas,
+		LastScaleTime:      currentHPA.Status.LastScaleTime,
+		CurrentMetrics:     currentHPA.Status.CurrentMetrics,
+		Conditions:         currentHPA.Status.Conditions,
+		ObservedGeneration: currentHPA.Status.ObservedGeneration,
 	}
 
-	customHPA.Status = status
-	err = r.Status().Update(ctx, &customHPA)
+	currendCustomHPA.Status = status
+	err = r.Status().Update(ctx, &currendCustomHPA)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	if customHPA.Spec.MinReplicas != current.Spec.MinReplicas {
+	if customHPA.Spec.MinReplicas != currentHPA.Spec.MinReplicas {
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	if customHPA.Spec.MaxReplicas != current.Spec.MaxReplicas {
+	if customHPA.Spec.MaxReplicas != currentHPA.Spec.MaxReplicas {
 		return ctrl.Result{Requeue: true}, nil
 	}
 
@@ -267,5 +272,6 @@ func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(
 func (r *CustomHorizontalPodAutoscalerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&customautoscalingv1.CustomHorizontalPodAutoscaler{}).
+		Owns(&autoscalingv2.HorizontalPodAutoscaler{}).
 		Complete(r)
 }
