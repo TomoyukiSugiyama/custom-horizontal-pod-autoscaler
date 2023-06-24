@@ -80,6 +80,9 @@ func (j *metricsJobClient) updateDesiredMinMaxReplicas(ctx context.Context) {
 	var current customautoscalingv1.CustomHorizontalPodAutoscaler
 	j.ctrlClient.Get(ctx, j.namespacedName, &current)
 
+	j.desiredTemporaryScaleMetricSpec.MinReplicas = current.Spec.MinReplicas
+	j.desiredTemporaryScaleMetricSpec.MaxReplicas = &current.Spec.MaxReplicas
+
 	for _, m := range current.Spec.TemporaryScaleMetrics {
 		k := metricType{
 			jobType:  m.Type,
@@ -87,14 +90,11 @@ func (j *metricsJobClient) updateDesiredMinMaxReplicas(ctx context.Context) {
 		}
 		res := j.metricsCollector.GetPersedQueryResult()
 		v, isExist := res[k]
-		if isExist && v == "1" {
+		if isExist && v == "1" && *j.desiredTemporaryScaleMetricSpec.MaxReplicas <= *m.MaxReplicas {
 			j.desiredTemporaryScaleMetricSpec.MinReplicas = m.MinReplicas
 			j.desiredTemporaryScaleMetricSpec.MaxReplicas = m.MaxReplicas
-			return
 		}
 	}
-	j.desiredTemporaryScaleMetricSpec.MinReplicas = current.Spec.MinReplicas
-	j.desiredTemporaryScaleMetricSpec.MaxReplicas = &current.Spec.MaxReplicas
 }
 
 func (j *metricsJobClient) updateStatus(ctx context.Context) error {
