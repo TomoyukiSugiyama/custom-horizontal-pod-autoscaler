@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/pointer"
 	apiv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
 	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
 	ctrlClient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -80,7 +81,10 @@ func (j *metricsJobClient) updateDesiredMinMaxReplicas(ctx context.Context) {
 	var current customautoscalingv1.CustomHorizontalPodAutoscaler
 	j.ctrlClient.Get(ctx, j.namespacedName, &current)
 
-	j.desiredTemporaryScaleMetricSpec.MinReplicas = current.Spec.MinReplicas
+	j.desiredTemporaryScaleMetricSpec.MinReplicas = pointer.Int32(1)
+	if current.Spec.MinReplicas != nil {
+		j.desiredTemporaryScaleMetricSpec.MinReplicas = current.Spec.MinReplicas
+	}
 	j.desiredTemporaryScaleMetricSpec.MaxReplicas = &current.Spec.MaxReplicas
 
 	for _, m := range current.Spec.TemporaryScaleMetrics {
@@ -91,7 +95,10 @@ func (j *metricsJobClient) updateDesiredMinMaxReplicas(ctx context.Context) {
 		res := j.metricsCollector.GetPersedQueryResult()
 		v, isExist := res[k]
 		if isExist && v == "1" && *j.desiredTemporaryScaleMetricSpec.MaxReplicas <= *m.MaxReplicas {
-			j.desiredTemporaryScaleMetricSpec.MinReplicas = m.MinReplicas
+			j.desiredTemporaryScaleMetricSpec.MinReplicas = pointer.Int32(1)
+			if m.MinReplicas != nil {
+				j.desiredTemporaryScaleMetricSpec.MinReplicas = m.MinReplicas
+			}
 			j.desiredTemporaryScaleMetricSpec.MaxReplicas = m.MaxReplicas
 		}
 	}
