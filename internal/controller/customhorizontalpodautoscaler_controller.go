@@ -94,8 +94,13 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 
 	var customHPA customautoscalingv1.CustomHorizontalPodAutoscaler
 	err := r.Get(ctx, req.NamespacedName, &customHPA)
-	// TODO: stop job if isNotFound error is occered
 	if errors.IsNotFound(err) {
+		if metricsJobClientExists {
+			metricsJobClient.Stop()
+			r.mu.Lock()
+			delete(r.metricsJobClients, req.NamespacedName)
+			r.mu.Unlock()
+		}
 		return ctrl.Result{}, nil
 	}
 
