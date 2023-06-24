@@ -237,7 +237,7 @@ func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(
 		return ctrl.Result{}, err
 	}
 
-	status := customautoscalingv1.CustomHorizontalPodAutoscalerStatus{
+	currendCustomHPA.Status = customautoscalingv1.CustomHorizontalPodAutoscalerStatus{
 		CurrentReplicas:    currentHPA.Status.CurrentReplicas,
 		DesiredReplicas:    currentHPA.Status.DesiredReplicas,
 		CurrentMinReplicas: *currentHPA.Spec.MinReplicas,
@@ -250,7 +250,6 @@ func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(
 		ObservedGeneration: currentHPA.Status.ObservedGeneration,
 	}
 
-	currendCustomHPA.Status = status
 	err = r.Status().Update(ctx, &currendCustomHPA)
 	if err != nil {
 		return ctrl.Result{}, err
