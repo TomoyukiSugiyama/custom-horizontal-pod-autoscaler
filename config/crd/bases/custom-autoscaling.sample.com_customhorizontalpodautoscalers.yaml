@@ -687,8 +687,10 @@ spec:
                 description: If temporaryScaleMetrics is set, the minReplicas and
                   maxReplicas of temporaryScaleMetrics are used in preference to the
                   minReplicas and maxReplicas of spec only when the corresponding
-                  metrics for name and duration of temporaryScaleMetrics are 1. If
-                  not set, the default minReplicas and maxReplicas of spec are used.
+                  metrics for name and duration of temporaryScaleMetrics are 1. Metric
+                  with the highest value of maxReplicas of temporaryScaleMetrics are
+                  enabled. If not set, the default minReplicas and maxReplicas of
+                  spec are used.
                 items:
                   properties:
                     duration:
@@ -709,7 +711,7 @@ spec:
                       format: int32
                       type: integer
                     type:
-                      description: type is the name of the target metric that determines
+                      description: type is a label of the target metric that determines
                         the upper and lower limits of the number of pods during a
                         temporary scale.
                       type: string
