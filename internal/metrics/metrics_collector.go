@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
@@ -23,6 +24,7 @@ type metricsCollector struct {
 	stopCh             chan struct{}
 	query              string
 	persedQueryResults map[metricType]string
+	mu                 sync.RWMutex
 }
 
 type metricType struct {
@@ -54,6 +56,8 @@ func WithControllerInterval(interval time.Duration) CollectorOption {
 }
 
 func (c *metricsCollector) GetPersedQueryResult() map[metricType]string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	return c.persedQueryResults
 }
 
@@ -83,6 +87,8 @@ func (c *metricsCollector) getTemporaryScaleMetrics(ctx context.Context) {
 }
 
 func (c *metricsCollector) perseMetrics(samples model.Vector) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.persedQueryResults = make(map[metricType]string)
 	for _, sample := range samples {
 		metrics, err := parser.ParseMetric(sample.Metric.String())
