@@ -16,11 +16,8 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - jsonPath: .spec.scaleTargetRef.kind
-      name: RefKind
-      type: string
-    - jsonPath: .spec.scaleTargetRef.name
-      name: RefName
+    - jsonPath: .spec.horizontalPodAutoscalerName
+      name: Reference
       type: string
     - jsonPath: .status.currentMinReplicas
       name: Minpod

@@ -135,8 +135,7 @@ type CustomHorizontalPodAutoscalerStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
-//+kubebuilder:printcolumn:name="RefKind",type="string",JSONPath=".spec.scaleTargetRef.kind"
-//+kubebuilder:printcolumn:name="RefName",type="string",JSONPath=".spec.scaleTargetRef.name"
+//+kubebuilder:printcolumn:name="Reference",type="string",JSONPath=".spec.horizontalPodAutoscalerName"
 //+kubebuilder:printcolumn:name="Minpod",type="integer",JSONPath=".status.currentMinReplicas"
 //+kubebuilder:printcolumn:name="Maxpod",type="integer",JSONPath=".status.currentMaxReplicas"
 //+kubebuilder:printcolumn:name="Replicas",type="integer",JSONPath=".status.currentReplicas"
