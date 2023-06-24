@@ -163,7 +163,6 @@ func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscal
 	}
 
 	maxReplicas := customHPA.Spec.MaxReplicas
-	// TODO: change MaxReplicas type to *int32
 	if desiredMinMaxReplicas.MaxReplicas != nil {
 		maxReplicas = *desiredMinMaxReplicas.MaxReplicas
 	}
