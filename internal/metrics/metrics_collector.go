@@ -49,7 +49,7 @@ func NewCollector(prometheusApi prometheusv1.API, opts ...CollectorOption) (Metr
 	return c, nil
 }
 
-func WithControllerInterval(interval time.Duration) CollectorOption {
+func WithMetricsCollectorInterval(interval time.Duration) CollectorOption {
 	return func(c *metricsCollector) {
 		c.interval = interval
 	}

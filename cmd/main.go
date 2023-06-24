@@ -62,6 +62,8 @@ func main() {
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+	metricsCollectorInterval := flag.Duration("metrics-collector-interval", 30*time.Second, "Interval for metricsCollector.")
+	metricsJobClientsInterval := flag.Duration("metrics-job-clients-interval", 30*time.Second, "Interval for metricsJobClients.")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -103,7 +105,7 @@ func main() {
 	api := prometheusv1.NewAPI(client)
 	collector, err := metrics.NewCollector(
 		api,
-		metrics.WithControllerInterval(30*time.Second),
+		metrics.WithMetricsCollectorInterval(*metricsCollectorInterval),
 	)
 	if err != nil {
 		setupLog.Error(err, "unable to create new metrics collector")
@@ -118,7 +120,7 @@ func main() {
 		mgr.GetClient(),
 		mgr.GetScheme(),
 		collector,
-		controller.WithmetricsJobClientsInterval(30*time.Second),
+		controller.WithMetricsJobClientsInterval(*metricsJobClientsInterval),
 	)
 
 	if err = controller.SetupWithManager(mgr); err != nil {

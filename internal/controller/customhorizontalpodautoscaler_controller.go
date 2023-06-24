@@ -78,7 +78,7 @@ func WithMetricsJobClients(metricsJobClients map[types.NamespacedName]metricspkg
 	}
 }
 
-func WithmetricsJobClientsInterval(metricsJobClientsInterval time.Duration) Option {
+func WithMetricsJobClientsInterval(metricsJobClientsInterval time.Duration) Option {
 	return func(r *CustomHorizontalPodAutoscalerReconciler) {
 		r.metricsJobClientsInterval = metricsJobClientsInterval
 	}
@@ -127,7 +127,7 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 			r.metricsCollector,
 			r.Client,
 			req.NamespacedName,
-			metricspkg.WithInterval(r.metricsJobClientsInterval),
+			metricspkg.WithMetricsJobClientsInterval(r.metricsJobClientsInterval),
 		)
 		if err != nil {
 			return ctrl.Result{}, err
