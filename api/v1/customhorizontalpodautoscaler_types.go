@@ -25,7 +25,7 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 type TemporaryScaleMetricSpec struct {
-	// Type is the name of the target metric that determines the upper and lower limits
+	// type is the name of the target metric that determines the upper and lower limits
 	// of the number of pods during a temporary scale.
 	Type string `json:"type"`
 	// duration is a label indicating the duration of the target metric that determines
@@ -47,8 +47,15 @@ type CustomHorizontalPodAutoscalerSpec struct {
 
 	// scaleTargetRef points to the target resource to scale, and is used to the pods for which metrics
 	// should be collected, as well as to actually change the replica count.
-	ScaleTargetRef              autoscalingv2.CrossVersionObjectReference `json:"scaleTargetRef" protobuf:"bytes,1,opt,name=scaleTargetRef"`
-	HorizontalPodAutoscalerName string                                    `json:"horizontalPodAutoscalerName"`
+	ScaleTargetRef autoscalingv2.CrossVersionObjectReference `json:"scaleTargetRef" protobuf:"bytes,1,opt,name=scaleTargetRef"`
+	// horizontalPodAutoscalerName must be unique within a namespace. Is required when creating resources, although
+	// some resources may allow a client to request the generation of an appropriate name
+	// automatically. Name is primarily intended for creation idempotence and configuration
+	// definition.
+	// Cannot be updated.
+	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names
+	// +optional
+	HorizontalPodAutoscalerName string `json:"horizontalPodAutoscalerName"`
 	// minReplicas is the lower limit for the number of replicas to which the autoscaler
 	// can scale down.  It defaults to 1 pod.  minReplicas is allowed to be 0 if the
 	// alpha feature gate HPAScaleToZero is enabled and at least one Object or External
@@ -135,8 +142,7 @@ type CustomHorizontalPodAutoscalerStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
-//+kubebuilder:printcolumn:name="RefKind",type="string",JSONPath=".spec.scaleTargetRef.kind"
-//+kubebuilder:printcolumn:name="RefName",type="string",JSONPath=".spec.scaleTargetRef.name"
+//+kubebuilder:printcolumn:name="Reference",type="string",JSONPath=".spec.horizontalPodAutoscalerName"
 //+kubebuilder:printcolumn:name="Minpod",type="integer",JSONPath=".status.currentMinReplicas"
 //+kubebuilder:printcolumn:name="Maxpod",type="integer",JSONPath=".status.currentMaxReplicas"
 //+kubebuilder:printcolumn:name="Replicas",type="integer",JSONPath=".status.currentReplicas"

@@ -16,11 +16,8 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - jsonPath: .spec.scaleTargetRef.kind
-      name: RefKind
-      type: string
-    - jsonPath: .spec.scaleTargetRef.name
-      name: RefName
+    - jsonPath: .spec.horizontalPodAutoscalerName
+      name: Reference
       type: string
     - jsonPath: .status.currentMinReplicas
       name: Minpod
@@ -172,6 +169,11 @@ spec:
                     type: object
                 type: object
               horizontalPodAutoscalerName:
+                description: 'horizontalPodAutoscalerName must be unique within a
+                  namespace. Is required when creating resources, although some resources
+                  may allow a client to request the generation of an appropriate name
+                  automatically. Name is primarily intended for creation idempotence
+                  and configuration definition. Cannot be updated. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names'
                 type: string
               maxReplicas:
                 description: maxReplicas is the upper limit for the number of replicas
@@ -707,7 +709,7 @@ spec:
                       format: int32
                       type: integer
                     type:
-                      description: Type is the name of the target metric that determines
+                      description: type is the name of the target metric that determines
                         the upper and lower limits of the number of pods during a
                         temporary scale.
                       type: string
@@ -719,7 +721,6 @@ spec:
                 type: array
                 x-kubernetes-list-type: atomic
             required:
-            - horizontalPodAutoscalerName
             - maxReplicas
             - scaleTargetRef
             type: object
