@@ -17,8 +17,10 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
+	"time"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -31,8 +33,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	prometheusapi "github.com/prometheus/client_golang/api"
+	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
 	"sample.com/custom-horizontal-pod-autoscaler/internal/controller"
+	"sample.com/custom-horizontal-pod-autoscaler/internal/metrics"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -88,7 +93,25 @@ func main() {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
-	controller := controller.NewReconcile(mgr.GetClient(), mgr.GetScheme())
+
+	// TODO: Need to set api address from frags.
+	client, err := prometheusapi.NewClient(prometheusapi.Config{Address: "http://localhost:9090"})
+	if err != nil {
+		setupLog.Error(err, "unable to create new prometheus client")
+		os.Exit(1)
+	}
+	api := prometheusv1.NewAPI(client)
+	collector, err := metrics.NewCollector(api)
+	if err != nil {
+		setupLog.Error(err, "unable to create new metrics collector")
+		os.Exit(1)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	go collector.Start(ctx)
+	defer collector.Stop()
+	controller := controller.NewReconcile(mgr.GetClient(), mgr.GetScheme(), collector)
 
 	if err = controller.SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "CustomHorizontalPodAutoscaler")
