@@ -57,9 +57,6 @@ func (j *metricsJobClient) getTemporaryScaleMetrics(ctx context.Context) {
 	logger := log.FromContext(ctx)
 	var current customautoscalingv1.CustomHorizontalPodAutoscaler
 	j.ctrlClient.Get(ctx, j.namespacedName, &current)
-
-	// ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	// defer cancel()
 	j.updateDesiredMinMaxReplicas(ctx)
 
 	for _, metric := range current.Spec.TemporaryScaleMetrics {
