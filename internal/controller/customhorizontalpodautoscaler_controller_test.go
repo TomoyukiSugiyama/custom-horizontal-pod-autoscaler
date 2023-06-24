@@ -53,7 +53,7 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 
 		desiredSpec := apiv1.TemporaryScaleMetricSpec{
 			MinReplicas: pointer.Int32(1),
-			MaxReplicas: int32(5),
+			MaxReplicas: pointer.Int32(5),
 		}
 		fakeMetricsJobClient := metricspkg.FakeNew(desiredSpec)
 		namespacedName := types.NamespacedName{Namespace: "dummy-namespace", Name: "test-customhpa"}
@@ -121,13 +121,13 @@ func newCustomHorizontalPodAutoscaler() *customautoscalingv1.CustomHorizontalPod
 			Type:        "workday",
 			Duration:    "7-21",
 			MinReplicas: &workdayMinRelpicas,
-			MaxReplicas: workdayMaxRelpicas,
+			MaxReplicas: &workdayMaxRelpicas,
 		},
 		{
 			Type:        "training",
 			Duration:    "7-21",
 			MinReplicas: &trainingMinRelpicas,
-			MaxReplicas: trainingMaxRelpicas,
+			MaxReplicas: &trainingMaxRelpicas,
 		},
 	}
 

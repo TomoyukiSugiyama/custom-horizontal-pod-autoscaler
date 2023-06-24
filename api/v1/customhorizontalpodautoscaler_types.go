@@ -37,7 +37,7 @@ type TemporaryScaleMetricSpec struct {
 	MinReplicas *int32 `json:"minReplicas"`
 	// maxReplicas is the upper limit for the number of replicas to which the custom autoscaler
 	// can scale up according to the temporary scale metrics. It cannot be less that minReplicas.
-	MaxReplicas int32 `json:"maxReplicas"`
+	MaxReplicas *int32 `json:"maxReplicas"`
 }
 
 // CustomHorizontalPodAutoscalerSpec defines the desired state of CustomHorizontalPodAutoscaler
