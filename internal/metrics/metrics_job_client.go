@@ -47,7 +47,7 @@ func New(metricsCollector MetricsCollector, ctrlClient ctrlClient.Client, namesp
 	return j, nil
 }
 
-func WithInterval(interval time.Duration) Option {
+func WithMetricsJobClientsInterval(interval time.Duration) Option {
 	return func(j *metricsJobClient) {
 		j.interval = interval
 	}
