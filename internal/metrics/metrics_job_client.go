@@ -94,14 +94,14 @@ func (j *metricsJobClient) updateDesiredMinMaxReplicas(ctx context.Context) {
 		}
 	}
 	j.desiredTemporaryScaleMetricSpec.MinReplicas = current.Spec.MinReplicas
-	j.desiredTemporaryScaleMetricSpec.MaxReplicas = current.Spec.MaxReplicas
+	j.desiredTemporaryScaleMetricSpec.MaxReplicas = &current.Spec.MaxReplicas
 }
 
 func (j *metricsJobClient) updateStatus(ctx context.Context) error {
 	var current customautoscalingv1.CustomHorizontalPodAutoscaler
 	j.ctrlClient.Get(ctx, j.namespacedName, &current)
 	current.Status.DesiredMinReplicas = *j.desiredTemporaryScaleMetricSpec.MinReplicas
-	current.Status.DesiredMaxReplicas = j.desiredTemporaryScaleMetricSpec.MaxReplicas
+	current.Status.DesiredMaxReplicas = *j.desiredTemporaryScaleMetricSpec.MaxReplicas
 	return j.ctrlClient.Status().Update(ctx, &current)
 }
 

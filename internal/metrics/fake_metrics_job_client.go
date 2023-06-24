@@ -29,6 +29,6 @@ func (j *FakeMetricsJobClient) Stop() {
 func (j *FakeMetricsJobClient) GetDesiredMinMaxReplicas() apiv1.TemporaryScaleMetricSpec {
 	return apiv1.TemporaryScaleMetricSpec{
 		MinReplicas: pointer.Int32(1),
-		MaxReplicas: int32(5),
+		MaxReplicas: pointer.Int32(5),
 	}
 }
