@@ -34,7 +34,7 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 		Expect(err).NotTo(HaveOccurred())
 		hpa := autoscalingv2.HorizontalPodAutoscaler{}
 		Eventually(func() error {
-			return k8sClient.Get(ctx, client.ObjectKey{Namespace: "dummy-namespace", Name: "sample"}, &hpa)
+			return k8sClient.Get(ctx, client.ObjectKey{Namespace: "dummy-namespace", Name: "test-hpa"}, &hpa)
 		}).Should(Succeed())
 		Expect(hpa.Spec.MinReplicas).Should(Equal(pointer.Int32Ptr(1)))
 		Expect(hpa.Spec.MaxReplicas).Should(Equal(int32(5)))
@@ -137,11 +137,12 @@ func newCustomHorizontalPodAutoscaler() *customautoscalingv1.CustomHorizontalPod
 			Namespace: "dummy-namespace",
 		},
 		Spec: customautoscalingv1.CustomHorizontalPodAutoscalerSpec{
-			MinReplicas:           &minReplicas,
-			MaxReplicas:           maxReplicas,
-			ScaleTargetRef:        scaleTargetRef,
-			Metrics:               metrics,
-			TemporaryScaleMetrics: temporaryScaleMetrics,
+			HorizontalPodAutoscalerName: "test-hpa",
+			MinReplicas:                 &minReplicas,
+			MaxReplicas:                 maxReplicas,
+			ScaleTargetRef:              scaleTargetRef,
+			Metrics:                     metrics,
+			TemporaryScaleMetrics:       temporaryScaleMetrics,
 		},
 	}
 }
