@@ -149,7 +149,7 @@ func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscal
 ) error {
 	// TODO: reconcile hpa if hpa is deleted.
 	logger := log.FromContext(ctx)
-	hpaName := customHPA.Name
+	hpaName := customHPA.Spec.HorizontalPodAutoscalerName
 
 	desiredMinMaxReplicas := metricsJobClient.GetDesiredMinMaxReplicas()
 	minReplicas := customHPA.Spec.MinReplicas
@@ -169,7 +169,7 @@ func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscal
 			APIVersion: autoscalingv2.SchemeGroupVersion.Identifier(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      customHPA.Name,
+			Name:      hpaName,
 			Namespace: customHPA.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(&customHPA, customautoscalingv1.SchemeBuilder.GroupVersion.WithKind("CustomHorizontalPodAutoscaler")),
@@ -218,7 +218,7 @@ func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscal
 		return err
 	}
 
-	logger.Info("reconcile HorizontalPodAutoscaler successfully", "name", customHPA.Name)
+	logger.Info("reconcile HorizontalPodAutoscaler successfully", "name", hpaName)
 	return nil
 }
 
@@ -227,7 +227,7 @@ func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(
 	customHPA customautoscalingv1.CustomHorizontalPodAutoscaler,
 ) (ctrl.Result, error) {
 	var current autoscalingv2.HorizontalPodAutoscaler
-	err := r.Get(ctx, client.ObjectKey{Namespace: customHPA.Namespace, Name: customHPA.Name}, &current)
+	err := r.Get(ctx, client.ObjectKey{Namespace: customHPA.Namespace, Name: customHPA.Spec.HorizontalPodAutoscalerName}, &current)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
