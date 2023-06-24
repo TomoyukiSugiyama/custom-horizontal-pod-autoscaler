@@ -255,11 +255,11 @@ func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(
 		return ctrl.Result{}, err
 	}
 
-	if customHPA.Spec.MinReplicas != currentHPA.Spec.MinReplicas {
+	if currendCustomHPA.Spec.MinReplicas != currentHPA.Spec.MinReplicas {
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	if customHPA.Spec.MaxReplicas != currentHPA.Spec.MaxReplicas {
+	if currendCustomHPA.Spec.MaxReplicas != currentHPA.Spec.MaxReplicas {
 		return ctrl.Result{Requeue: true}, nil
 	}
 
