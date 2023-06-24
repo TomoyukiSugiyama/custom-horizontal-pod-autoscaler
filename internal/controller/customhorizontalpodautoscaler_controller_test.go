@@ -72,7 +72,7 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 			os.Exit(1)
 		}
 
-		collector.Start(ctx)
+		go collector.Start(ctx)
 
 		reconciler := NewReconcile(k8sClient, scheme.Scheme, collector, WithMetricsJobClients(fakeMetricsJobClients))
 
