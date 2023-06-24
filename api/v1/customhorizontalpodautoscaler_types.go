@@ -25,7 +25,7 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 type TemporaryScaleMetricSpec struct {
-	// type is the name of the target metric that determines the upper and lower limits
+	// type is a label of the target metric that determines the upper and lower limits
 	// of the number of pods during a temporary scale.
 	Type string `json:"type"`
 	// duration is a label indicating the duration of the target metric that determines
@@ -80,6 +80,7 @@ type CustomHorizontalPodAutoscalerSpec struct {
 	// If temporaryScaleMetrics is set, the minReplicas and maxReplicas of temporaryScaleMetrics are used
 	// in preference to the minReplicas and maxReplicas of spec only when the corresponding metrics
 	// for name and duration of temporaryScaleMetrics are 1.
+	// Metric with the highest value of maxReplicas of temporaryScaleMetrics are enabled.
 	// If not set, the default minReplicas and maxReplicas of spec are used.
 	// +listType=atomic
 	// +optional
