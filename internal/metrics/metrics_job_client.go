@@ -86,6 +86,7 @@ func (j *metricsJobClient) getTemporaryScaleMetrics(ctx context.Context) {
 }
 
 func (j *metricsJobClient) updateDesiredMinMaxReplicas() {
+	// TODO: Need to get customHPA from ctrlClient
 	for _, m := range j.customHPA.Spec.TemporaryScaleMetrics {
 		k := metricType{
 			jobType:  m.Type,
