@@ -34,7 +34,7 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 		Expect(err).NotTo(HaveOccurred())
 		hpa := autoscalingv2.HorizontalPodAutoscaler{}
 		Eventually(func() error {
-			return k8sClient.Get(ctx, client.ObjectKey{Namespace: "dummy-namespace", Name: "sample"}, &hpa)
+			return k8sClient.Get(ctx, client.ObjectKey{Namespace: "dummy-namespace", Name: "test-hpa"}, &hpa)
 		}).Should(Succeed())
 		Expect(hpa.Spec.MinReplicas).Should(Equal(pointer.Int32Ptr(1)))
 		Expect(hpa.Spec.MaxReplicas).Should(Equal(int32(5)))
@@ -56,7 +56,7 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 			MaxReplicas: int32(5),
 		}
 		fakeMetricsJobClient := metricspkg.FakeNew(desiredSpec)
-		namespacedName := types.NamespacedName{Namespace: "dummy-namespace", Name: "sample"}
+		namespacedName := types.NamespacedName{Namespace: "dummy-namespace", Name: "test-customhpa"}
 		fakeMetricsJobClients := map[types.NamespacedName]metricspkg.MetricsJobClient{namespacedName: fakeMetricsJobClient}
 
 		client, err := prometheusapi.NewClient(prometheusapi.Config{Address: "http://localhost:9090"})
@@ -133,15 +133,16 @@ func newCustomHorizontalPodAutoscaler() *customautoscalingv1.CustomHorizontalPod
 
 	return &customautoscalingv1.CustomHorizontalPodAutoscaler{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "sample",
+			Name:      "test-customhpa",
 			Namespace: "dummy-namespace",
 		},
 		Spec: customautoscalingv1.CustomHorizontalPodAutoscalerSpec{
-			MinReplicas:           &minReplicas,
-			MaxReplicas:           maxReplicas,
-			ScaleTargetRef:        scaleTargetRef,
-			Metrics:               metrics,
-			TemporaryScaleMetrics: temporaryScaleMetrics,
+			HorizontalPodAutoscalerName: "test-hpa",
+			MinReplicas:                 &minReplicas,
+			MaxReplicas:                 maxReplicas,
+			ScaleTargetRef:              scaleTargetRef,
+			Metrics:                     metrics,
+			TemporaryScaleMetrics:       temporaryScaleMetrics,
 		},
 	}
 }
