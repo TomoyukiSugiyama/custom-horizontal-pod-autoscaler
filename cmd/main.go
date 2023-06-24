@@ -101,7 +101,10 @@ func main() {
 		os.Exit(1)
 	}
 	api := prometheusv1.NewAPI(client)
-	collector, err := metrics.NewCollector(api)
+	collector, err := metrics.NewCollector(
+		api,
+		metrics.WithControllerInterval(30*time.Second),
+	)
 	if err != nil {
 		setupLog.Error(err, "unable to create new metrics collector")
 		os.Exit(1)
@@ -111,7 +114,12 @@ func main() {
 
 	go collector.Start(ctx)
 	defer collector.Stop()
-	controller := controller.NewReconcile(mgr.GetClient(), mgr.GetScheme(), collector)
+	controller := controller.NewReconcile(
+		mgr.GetClient(),
+		mgr.GetScheme(),
+		collector,
+		controller.WithmetricsJobClientsInterval(30*time.Second),
+	)
 
 	if err = controller.SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "CustomHorizontalPodAutoscaler")

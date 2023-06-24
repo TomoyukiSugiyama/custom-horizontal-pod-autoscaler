@@ -42,11 +42,11 @@ import (
 // CustomHorizontalPodAutoscalerReconciler reconciles a CustomHorizontalPodAutoscaler object
 type CustomHorizontalPodAutoscalerReconciler struct {
 	client.Client
-	Scheme            *runtime.Scheme
-	metricsCollector  metricspkg.MetricsCollector
-	metricsJobClients map[types.NamespacedName]metricspkg.MetricsJobClient
-
-	mu sync.RWMutex
+	Scheme                    *runtime.Scheme
+	metricsCollector          metricspkg.MetricsCollector
+	metricsJobClients         map[types.NamespacedName]metricspkg.MetricsJobClient
+	metricsJobClientsInterval time.Duration
+	mu                        sync.RWMutex
 }
 
 type Option func(*CustomHorizontalPodAutoscalerReconciler)
@@ -58,10 +58,11 @@ type Option func(*CustomHorizontalPodAutoscalerReconciler)
 func NewReconcile(Client client.Client, Scheme *runtime.Scheme, metricsCollector metricspkg.MetricsCollector, opts ...Option) *CustomHorizontalPodAutoscalerReconciler {
 
 	r := &CustomHorizontalPodAutoscalerReconciler{
-		Client:            Client,
-		Scheme:            Scheme,
-		metricsCollector:  metricsCollector,
-		metricsJobClients: make(map[types.NamespacedName]metricspkg.MetricsJobClient),
+		Client:                    Client,
+		Scheme:                    Scheme,
+		metricsCollector:          metricsCollector,
+		metricsJobClients:         make(map[types.NamespacedName]metricspkg.MetricsJobClient),
+		metricsJobClientsInterval: 30 * time.Second,
 	}
 
 	for _, opt := range opts {
@@ -74,6 +75,12 @@ func NewReconcile(Client client.Client, Scheme *runtime.Scheme, metricsCollector
 func WithMetricsJobClients(metricsJobClients map[types.NamespacedName]metricspkg.MetricsJobClient) Option {
 	return func(r *CustomHorizontalPodAutoscalerReconciler) {
 		r.metricsJobClients = metricsJobClients
+	}
+}
+
+func WithmetricsJobClientsInterval(metricsJobClientsInterval time.Duration) Option {
+	return func(r *CustomHorizontalPodAutoscalerReconciler) {
+		r.metricsJobClientsInterval = metricsJobClientsInterval
 	}
 }
 
@@ -116,12 +123,11 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 	}
 
 	if !metricsJobClientExists {
-		// TODO: Need to set interval from main.
 		metricsJobClient, err = metricspkg.New(
 			r.metricsCollector,
 			r.Client,
 			req.NamespacedName,
-			metricspkg.WithInterval(30*time.Second),
+			metricspkg.WithInterval(r.metricsJobClientsInterval),
 		)
 		if err != nil {
 			return ctrl.Result{}, err
