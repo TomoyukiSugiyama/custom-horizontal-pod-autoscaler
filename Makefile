@@ -60,7 +60,7 @@ test: manifests generate fmt vet envtest ## Run tests.
 	cat cover.out.tmp | grep -v "fake_.*.go" > cover.out
 	rm cover.out.tmp
 
-.PHONY: test
+.PHONY: cover
 cover: test
 	go tool cover -html=cover.out
 ##@ Build
