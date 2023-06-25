@@ -89,30 +89,6 @@ func NewFakePrometheusServer() (*httptest.Server, error) {
 		},
 	}
 
-	// data := []byte(
-	// 	`{
-	// 		"resultType":"vector",
-	// 		"result":[
-	// 			{
-	// 				"metric":{
-	// 					"__name__":"temporary_scale",
-	// 					"job":"prometheus",
-	// 					"instance":"localhost:9090",
-	// 					"exported_job":"temporary_scale_job_7-21_training",
-	// 					"duration":"7-21",
-	// 					"type":"training"
-	// 				},
-	// 				"value":[1435781451.781,"1"]
-	// 			}
-	// 		]
-	// 	}`,
-	// )
-
-	// resp := apiResponse{
-	// 	Status: "success",
-	// 	Data:   data,
-	// }
-
 	return httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
