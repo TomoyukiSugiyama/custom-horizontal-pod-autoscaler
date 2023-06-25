@@ -17,7 +17,6 @@ import (
 
 var _ = Describe("MetricsJobClient", func() {
 	ctx := context.Background()
-	//var stopFunc func()
 
 	It("Should get desiredMinMaxremplicas", func() {
 		mt := metricType{
@@ -48,7 +47,6 @@ var _ = Describe("MetricsJobClient", func() {
 	})
 
 	AfterEach(func() {
-		//stopFunc()
 		time.Sleep(100 * time.Millisecond)
 	})
 })
