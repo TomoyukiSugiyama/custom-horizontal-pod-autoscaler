@@ -69,7 +69,7 @@ func newCustomHorizontalPodAutoscaler() *customautoscalingv1.CustomHorizontalPod
 					Name: "memory_usage_bytes",
 				},
 				Target: autoscalingv2.MetricTarget{
-					Type:         "Value",
+					Type:         "AverageValue",
 					AverageValue: resource.NewQuantity(8*1024*1024, resource.BinarySI),
 				},
 			},
