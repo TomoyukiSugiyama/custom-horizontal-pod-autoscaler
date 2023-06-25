@@ -57,6 +57,8 @@ func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
+	var prometheusAddr string
+	var prometheusPort string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
@@ -64,6 +66,8 @@ func main() {
 			"Enabling this will ensure there is only one active controller manager.")
 	metricsCollectorInterval := flag.Duration("metrics-collector-interval", 30*time.Second, "Interval for metricsCollector.")
 	metricsJobClientsInterval := flag.Duration("metrics-job-clients-interval", 30*time.Second, "Interval for metricsJobClients.")
+	flag.StringVar(&prometheusAddr, "prometheus-address", "localhost", "Address of prometheus.")
+	flag.StringVar(&prometheusPort, "prometheus-port", "9090", "Port number of prometheus.")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -96,8 +100,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	// TODO: Need to set api address from frags.
-	client, err := prometheusapi.NewClient(prometheusapi.Config{Address: "http://localhost:9090"})
+	addr := "http://" + prometheusAddr + ":" + prometheusPort
+	client, err := prometheusapi.NewClient(prometheusapi.Config{Address: addr})
 	if err != nil {
 		setupLog.Error(err, "unable to create new prometheus client")
 		os.Exit(1)
