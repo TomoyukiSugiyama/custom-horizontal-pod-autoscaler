@@ -45,34 +45,73 @@ var _ = Describe("MetricsJobClient", func() {
 
 func NewFakePrometheusServer() (*httptest.Server, error) {
 
+	type metric struct {
+		Name        string `json:"__name__"`
+		Job         string `json:"job"`
+		Instance    string `json:"instance"`
+		ExportedJob string `json:"exported_job"`
+		Duration    string `json:"duration"`
+		Type        string `json:"type"`
+	}
+
+	type result struct {
+		Metric metric          `json:"metric"`
+		Value  json.RawMessage `json:"value"`
+	}
+
+	type data struct {
+		ResultType string   `json:"resultType"`
+		Result     []result `json:"result"`
+	}
+
 	type apiResponse struct {
-		Status string          `json:"status"`
-		Data   json.RawMessage `json:"data"`
+		Status string `json:"status"`
+		Data   data   `json:"data"`
 	}
 
-	data := []byte(
-		`{
-			"resultType":"vector",
-			"result":[
-				{
-					"metric":{
-						"__name__":"temporary_scale",
-						"job":"prometheus",
-						"instance":"localhost:9090",
-						"exported_job":"temporary_scale_job_7-21_training",
-						"duration":"7-21",
-						"type":"training"
-					},
-					"value":[1435781451.781,"1"]
-				}
-			]
-		}`,
-	)
-
-	resp := apiResponse{
+	res := apiResponse{
 		Status: "success",
-		Data:   data,
+		Data: data{
+			ResultType: "vector",
+			Result: []result{
+				{
+					Metric: metric{
+						Name:        "temporary_scale",
+						Job:         "prometheus",
+						Instance:    "localhost:9090",
+						ExportedJob: "temporary_scale_job_7-21_training",
+						Duration:    "7-21",
+						Type:        "training",
+					},
+					Value: []byte(`[1435781451.781,"1"]`),
+				},
+			},
+		},
 	}
+
+	// data := []byte(
+	// 	`{
+	// 		"resultType":"vector",
+	// 		"result":[
+	// 			{
+	// 				"metric":{
+	// 					"__name__":"temporary_scale",
+	// 					"job":"prometheus",
+	// 					"instance":"localhost:9090",
+	// 					"exported_job":"temporary_scale_job_7-21_training",
+	// 					"duration":"7-21",
+	// 					"type":"training"
+	// 				},
+	// 				"value":[1435781451.781,"1"]
+	// 			}
+	// 		]
+	// 	}`,
+	// )
+
+	// resp := apiResponse{
+	// 	Status: "success",
+	// 	Data:   data,
+	// }
 
 	return httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -81,7 +120,7 @@ func NewFakePrometheusServer() (*httptest.Server, error) {
 				w.WriteHeader(http.StatusAccepted)
 				return
 			}
-			b, err := json.Marshal(resp)
+			b, err := json.Marshal(res)
 			Expect(err).NotTo(HaveOccurred())
 			w.Write(b)
 			w.WriteHeader(http.StatusOK)
