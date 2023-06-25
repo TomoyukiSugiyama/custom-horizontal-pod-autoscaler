@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"time"
@@ -16,20 +17,25 @@ var _ = Describe("MetricsJobClient", func() {
 	ctx := context.Background()
 
 	It("Should get persedQueryResult", func() {
+		fakePrometheus, _ := NewFakePrometheusServer()
+		defer fakePrometheus.Close()
+
+		client, err := prometheusapi.NewClient(prometheusapi.Config{Address: fakePrometheus.URL})
+
+		Expect(err).NotTo(HaveOccurred())
+		api := prometheusv1.NewAPI(client)
+		collector, err := NewCollector(api, WithMetricsCollectorInterval(50*time.Millisecond))
+		Expect(err).NotTo(HaveOccurred())
+
+		go collector.Start(ctx)
+		time.Sleep(100 * time.Millisecond)
+
+		res := collector.GetPersedQueryResult()
+		Expect(res[metricType{duration: "7-21", jobType: "training"}]).Should(Equal("1"))
 
 	})
 
 	BeforeEach(func() {
-		prom, _ := NewFakePrometheusServer()
-		defer prom.Close()
-		client, err := prometheusapi.NewClient(prometheusapi.Config{Address: prom.URL})
-		Expect(err).NotTo(HaveOccurred())
-		api := prometheusv1.NewAPI(client)
-		collector, err := NewCollector(api)
-		Expect(err).NotTo(HaveOccurred())
-
-		go collector.Start(ctx)
-
 	})
 
 	AfterEach(func() {
@@ -38,27 +44,47 @@ var _ = Describe("MetricsJobClient", func() {
 })
 
 func NewFakePrometheusServer() (*httptest.Server, error) {
-	// var (
-	// 	lastMethod string
-	// 	lastBody   []byte
-	// 	lastPath   string
-	// )
+
+	type apiResponse struct {
+		Status string          `json:"status"`
+		Data   json.RawMessage `json:"data"`
+	}
+
+	data := []byte(
+		`{
+			"resultType":"vector",
+			"result":[
+				{
+					"metric":{
+						"__name__":"temporary_scale",
+						"job":"prometheus",
+						"instance":"localhost:9090",
+						"exported_job":"temporary_scale_job_7-21_training",
+						"duration":"7-21",
+						"type":"training"
+					},
+					"value":[1435781451.781,"1"]
+				}
+			]
+		}`,
+	)
+
+	resp := apiResponse{
+		Status: "success",
+		Data:   data,
+	}
+
 	return httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// lastMethod = r.Method
-			var err error
-			// lastBody, err = io.ReadAll(r.Body)
-			if err != nil {
-
-			}
-			// lastPath = r.URL.EscapedPath()
-			w.Header().Set("Content-Type", `text/plain; charset=utf-8`)
+			w.Header().Set("Content-Type", "application/json")
 			if r.Method == http.MethodDelete {
 				w.WriteHeader(http.StatusAccepted)
 				return
 			}
+			b, err := json.Marshal(resp)
+			Expect(err).NotTo(HaveOccurred())
+			w.Write(b)
 			w.WriteHeader(http.StatusOK)
-
 		}),
 	), nil
 }
