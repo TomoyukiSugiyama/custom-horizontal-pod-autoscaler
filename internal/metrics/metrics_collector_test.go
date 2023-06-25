@@ -17,7 +17,7 @@ var _ = Describe("MetricsJobClient", func() {
 	ctx := context.Background()
 
 	It("Should get persedQueryResult", func() {
-		fakePrometheus, _ := NewFakePrometheusServer()
+		fakePrometheus := NewFakePrometheusServer()
 		defer fakePrometheus.Close()
 
 		client, err := prometheusapi.NewClient(prometheusapi.Config{Address: fakePrometheus.URL})
@@ -43,7 +43,7 @@ var _ = Describe("MetricsJobClient", func() {
 	})
 })
 
-func NewFakePrometheusServer() (*httptest.Server, error) {
+func NewFakePrometheusServer() *httptest.Server {
 
 	type metric struct {
 		Name        string `json:"__name__"`
@@ -101,5 +101,5 @@ func NewFakePrometheusServer() (*httptest.Server, error) {
 			w.Write(b)
 			w.WriteHeader(http.StatusOK)
 		}),
-	), nil
+	)
 }
