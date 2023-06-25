@@ -22,7 +22,7 @@ spec:
       metric:
         name: memory_usage_bytes
       target:
-        type: Value
+        type: AverageValue
         averageValue: 8368128
   temporaryScaleMetrics:
   - type: workday
