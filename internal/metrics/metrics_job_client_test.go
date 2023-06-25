@@ -19,7 +19,7 @@ var _ = Describe("MetricsJobClient", func() {
 	ctx := context.Background()
 	//var stopFunc func()
 
-	It("Should get persed metrics", func() {
+	It("Should get desiredMinMaxremplicas", func() {
 		mt := metricType{
 			jobType:  "training",
 			duration: "7-21",
