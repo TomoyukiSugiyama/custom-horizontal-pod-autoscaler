@@ -32,6 +32,7 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 		customHorizontalPodAutoscaler := newCustomHorizontalPodAutoscaler()
 		err := k8sClient.Create(ctx, customHorizontalPodAutoscaler)
 		Expect(err).NotTo(HaveOccurred())
+		time.Sleep(20 * time.Millisecond)
 		hpa := autoscalingv2.HorizontalPodAutoscaler{}
 		Eventually(func() error {
 			return k8sClient.Get(ctx, client.ObjectKey{Namespace: "dummy-namespace", Name: "test-hpa"}, &hpa)
