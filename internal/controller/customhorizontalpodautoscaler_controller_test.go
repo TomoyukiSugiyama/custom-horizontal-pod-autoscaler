@@ -37,8 +37,31 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 		Eventually(func() error {
 			return k8sClient.Get(ctx, client.ObjectKey{Namespace: "dummy-namespace", Name: "test-hpa"}, &hpa)
 		}).Should(Succeed())
+
+		Expect(hpa.Name).Should(Equal("test-hpa"))
 		Expect(hpa.Spec.MinReplicas).Should(Equal(pointer.Int32Ptr(1)))
 		Expect(hpa.Spec.MaxReplicas).Should(Equal(int32(5)))
+		expectedScaleTargetRef := autoscalingv2.CrossVersionObjectReference{
+			APIVersion: "apps/v1",
+			Kind:       "Deployment",
+			Name:       "test-deployment",
+		}
+		Expect(hpa.Spec.ScaleTargetRef).Should(Equal(expectedScaleTargetRef))
+		expectedMetrics := []autoscalingv2.MetricSpec{
+			{
+				Type: "Pods",
+				Pods: &autoscalingv2.PodsMetricSource{
+					Metric: autoscalingv2.MetricIdentifier{
+						Name: "memory_usage_bytes",
+					},
+					Target: autoscalingv2.MetricTarget{
+						Type:         "AverageValue",
+						AverageValue: resource.NewQuantity(8*1024*1024, resource.BinarySI),
+					},
+				},
+			},
+		}
+		Expect(hpa.Spec.Metrics).Should(Equal(expectedMetrics))
 	})
 
 	BeforeEach(func() {
@@ -107,7 +130,7 @@ func newCustomHorizontalPodAutoscaler() *customautoscalingv1.CustomHorizontalPod
 					Name: "memory_usage_bytes",
 				},
 				Target: autoscalingv2.MetricTarget{
-					Type:         "Value",
+					Type:         "AverageValue",
 					AverageValue: resource.NewQuantity(8*1024*1024, resource.BinarySI),
 				},
 			},
