@@ -695,11 +695,25 @@ spec:
                   spec are used.
                 items:
                   properties:
-                    duration:
-                      description: duration is a label indicating the duration of
-                        the target metric that determines the upper and lower limits
-                        of the number of pods during the temporary scale.
-                      type: string
+                    condition:
+                      description: 'EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO
+                        OWN! NOTE: json tags are required.  Any new fields you add
+                        must have json tags for the fields to be serialized.'
+                      properties:
+                        id:
+                          description: duration is a label indicating the duration
+                            of the target metric that determines the upper and lower
+                            limits of the number of pods during the temporary scale.
+                          type: string
+                        type:
+                          description: type is a label of the target metric that determines
+                            the upper and lower limits of the number of pods during
+                            a temporary scale.
+                          type: string
+                      required:
+                      - id
+                      - type
+                      type: object
                     maxReplicas:
                       description: maxReplicas is the upper limit for the number of
                         replicas to which the custom autoscaler can scale up according
@@ -712,15 +726,12 @@ spec:
                         to the temporary scale metrics. It defaults to 1 pod.
                       format: int32
                       type: integer
-                    type:
-                      description: type is a label of the target metric that determines
-                        the upper and lower limits of the number of pods during a
-                        temporary scale.
+                    target:
                       type: string
                   required:
-                  - duration
+                  - condition
                   - maxReplicas
-                  - type
+                  - target
                   type: object
                 type: array
                 x-kubernetes-list-type: atomic

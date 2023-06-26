@@ -23,14 +23,18 @@ import (
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
-type TemporaryScaleMetricSpec struct {
+type Condition struct {
 	// type is a label of the target metric that determines the upper and lower limits
 	// of the number of pods during a temporary scale.
 	Type string `json:"type"`
 	// duration is a label indicating the duration of the target metric that determines
 	// the upper and lower limits of the number of pods during the temporary scale.
-	Duration string `json:"duration"`
+	Id string `json:"id"`
+}
+
+type ConditionalReplicalTargetSpec struct {
+	Target    string    `json:"target"`
+	Condition Condition `json:"condition"`
 	// minReplicas is the lower limit for the number of replicas to which the custom autoscaler
 	// can scale up according to the temporary scale metrics. It defaults to 1 pod.
 	// +optional
@@ -84,7 +88,7 @@ type CustomHorizontalPodAutoscalerSpec struct {
 	// If not set, the default minReplicas and maxReplicas of spec are used.
 	// +listType=atomic
 	// +optional
-	TemporaryScaleMetrics []TemporaryScaleMetricSpec `json:"temporaryScaleMetrics"`
+	ConditionalReplicalTargets []ConditionalReplicalTargetSpec `json:"temporaryScaleMetrics"`
 	// behavior configures the scaling behavior of the target
 	// in both Up and Down directions (scaleUp and scaleDown fields respectively).
 	// If not set, the default HPAScalingRules for scale up and scale down are used.
