@@ -24,12 +24,16 @@ spec:
       target:
         type: AverageValue
         averageValue: 8368128
-  temporaryScaleMetrics:
-  - type: workday
-    duration: 7-21
+  conditionalReplicasTargets:
+  - target: temporary-scale
+    condition:
+      type: workday
+      id: 7-21
     minReplicas: 2
     maxReplicas: 4
-  - type: training
-    duration: 7-21
-    minReplicas: 5
-    maxReplicas: 10
+  - target: temporary-scale
+    condition:
+      type: training
+      id: 7-21
+    minReplicas: 2
+    maxReplicas: 4
