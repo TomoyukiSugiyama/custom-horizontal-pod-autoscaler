@@ -1,4 +1,8 @@
 # custom-horizontal-pod-autoscaler
+
+![Go CI](https://github.com/uzabase/custom-horizontal-pod-autoscaler/workflows/Go%20CI/badge.svg)
+![Go Build](https://github.com/uzabase/custom-horizontal-pod-autoscaler/workflows/Go%20Build/badge.svg)
+
 Custom Horizontal Pod Autoscaler is an autoscaler that allows the upper and lower limits of the number of replicas of the [Horizontal Pod Autoscaler](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/) to be changed by Prometheus metrics. It is used when temporary scaling is desired.
 
 ## Description
