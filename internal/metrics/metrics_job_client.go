@@ -31,16 +31,16 @@ import (
 type MetricsJobClient interface {
 	Start(ctx context.Context)
 	Stop()
-	GetDesiredMinMaxReplicas() apiv1.TemporaryScaleMetricSpec
+	GetDesiredMinMaxReplicas() apiv1.ConditionalReplicasTargetSpec
 }
 
 type metricsJobClient struct {
-	metricsCollector                MetricsCollector
-	ctrlClient                      ctrlClient.Client
-	interval                        time.Duration
-	stopCh                          chan struct{}
-	desiredTemporaryScaleMetricSpec apiv1.TemporaryScaleMetricSpec
-	namespacedName                  types.NamespacedName
+	metricsCollector                 MetricsCollector
+	ctrlClient                       ctrlClient.Client
+	interval                         time.Duration
+	stopCh                           chan struct{}
+	desiredConditionalReplicasTarget apiv1.ConditionalReplicasTargetSpec
+	namespacedName                   types.NamespacedName
 }
 
 var _ MetricsJobClient = (*metricsJobClient)(nil)
@@ -49,12 +49,12 @@ type Option func(*metricsJobClient)
 
 func New(metricsCollector MetricsCollector, ctrlClient ctrlClient.Client, namespacedName types.NamespacedName, opts ...Option) (MetricsJobClient, error) {
 	j := &metricsJobClient{
-		interval:                        30 * time.Second,
-		stopCh:                          make(chan struct{}),
-		metricsCollector:                metricsCollector,
-		ctrlClient:                      ctrlClient,
-		namespacedName:                  namespacedName,
-		desiredTemporaryScaleMetricSpec: apiv1.TemporaryScaleMetricSpec{},
+		interval:                         30 * time.Second,
+		stopCh:                           make(chan struct{}),
+		metricsCollector:                 metricsCollector,
+		ctrlClient:                       ctrlClient,
+		namespacedName:                   namespacedName,
+		desiredConditionalReplicasTarget: apiv1.ConditionalReplicasTargetSpec{},
 	}
 
 	for _, opt := range opts {
@@ -70,26 +70,26 @@ func WithMetricsJobClientsInterval(interval time.Duration) Option {
 	}
 }
 
-func (j *metricsJobClient) getTemporaryScaleMetrics(ctx context.Context) {
+func (j *metricsJobClient) getConditionalReplicasTarget(ctx context.Context) {
 	logger := log.FromContext(ctx)
 	var current customautoscalingv1.CustomHorizontalPodAutoscaler
 	j.ctrlClient.Get(ctx, j.namespacedName, &current)
 	j.updateDesiredMinMaxReplicas(ctx)
 
-	for _, metric := range current.Spec.TemporaryScaleMetrics {
+	for _, target := range current.Spec.ConditionalReplicasTargets {
 		logger.Info(
 			"customHPA settings",
-			"duration", metric.Duration,
-			"type", metric.Type,
-			"minReplicas", metric.MinReplicas,
-			"maxReplicas", metric.MaxReplicas,
+			"id", target.Condition.Id,
+			"type", target.Condition.Type,
+			"minReplicas", target.MinReplicas,
+			"maxReplicas", target.MaxReplicas,
 		)
 	}
 
 	logger.Info(
 		"update desired min and max replicas",
-		"minReplicas", j.desiredTemporaryScaleMetricSpec.MinReplicas,
-		"maxReplicas", j.desiredTemporaryScaleMetricSpec.MaxReplicas,
+		"minReplicas", j.desiredConditionalReplicasTarget.MinReplicas,
+		"maxReplicas", j.desiredConditionalReplicasTarget.MaxReplicas,
 	)
 }
 
@@ -97,25 +97,25 @@ func (j *metricsJobClient) updateDesiredMinMaxReplicas(ctx context.Context) {
 	var current customautoscalingv1.CustomHorizontalPodAutoscaler
 	j.ctrlClient.Get(ctx, j.namespacedName, &current)
 
-	j.desiredTemporaryScaleMetricSpec.MinReplicas = pointer.Int32(1)
+	j.desiredConditionalReplicasTarget.MinReplicas = pointer.Int32(1)
 	if current.Spec.MinReplicas != nil {
-		j.desiredTemporaryScaleMetricSpec.MinReplicas = current.Spec.MinReplicas
+		j.desiredConditionalReplicasTarget.MinReplicas = current.Spec.MinReplicas
 	}
-	j.desiredTemporaryScaleMetricSpec.MaxReplicas = &current.Spec.MaxReplicas
+	j.desiredConditionalReplicasTarget.MaxReplicas = &current.Spec.MaxReplicas
 
-	for _, m := range current.Spec.TemporaryScaleMetrics {
+	for _, target := range current.Spec.ConditionalReplicasTargets {
 		k := metricType{
-			jobType:  m.Type,
-			duration: m.Duration,
+			jobType:  target.Condition.Type,
+			duration: target.Condition.Id,
 		}
 		res := j.metricsCollector.GetPersedQueryResult()
 		v, isExist := res[k]
-		if isExist && v == "1" && *j.desiredTemporaryScaleMetricSpec.MaxReplicas <= *m.MaxReplicas {
-			j.desiredTemporaryScaleMetricSpec.MinReplicas = pointer.Int32(1)
-			if m.MinReplicas != nil {
-				j.desiredTemporaryScaleMetricSpec.MinReplicas = m.MinReplicas
+		if isExist && v == "1" && *j.desiredConditionalReplicasTarget.MaxReplicas <= *target.MaxReplicas {
+			j.desiredConditionalReplicasTarget.MinReplicas = pointer.Int32(1)
+			if target.MinReplicas != nil {
+				j.desiredConditionalReplicasTarget.MinReplicas = target.MinReplicas
 			}
-			j.desiredTemporaryScaleMetricSpec.MaxReplicas = m.MaxReplicas
+			j.desiredConditionalReplicasTarget.MaxReplicas = target.MaxReplicas
 		}
 	}
 }
@@ -123,13 +123,13 @@ func (j *metricsJobClient) updateDesiredMinMaxReplicas(ctx context.Context) {
 func (j *metricsJobClient) updateStatus(ctx context.Context) error {
 	var current customautoscalingv1.CustomHorizontalPodAutoscaler
 	j.ctrlClient.Get(ctx, j.namespacedName, &current)
-	current.Status.DesiredMinReplicas = *j.desiredTemporaryScaleMetricSpec.MinReplicas
-	current.Status.DesiredMaxReplicas = *j.desiredTemporaryScaleMetricSpec.MaxReplicas
+	current.Status.DesiredMinReplicas = *j.desiredConditionalReplicasTarget.MinReplicas
+	current.Status.DesiredMaxReplicas = *j.desiredConditionalReplicasTarget.MaxReplicas
 	return j.ctrlClient.Status().Update(ctx, &current)
 }
 
-func (j *metricsJobClient) GetDesiredMinMaxReplicas() apiv1.TemporaryScaleMetricSpec {
-	return j.desiredTemporaryScaleMetricSpec
+func (j *metricsJobClient) GetDesiredMinMaxReplicas() apiv1.ConditionalReplicasTargetSpec {
+	return j.desiredConditionalReplicasTarget
 }
 
 func (j *metricsJobClient) Start(ctx context.Context) {
@@ -145,7 +145,7 @@ func (j *metricsJobClient) Start(ctx context.Context) {
 		case <-ticker.C:
 			logger.Info("received scheduler tick")
 			ctx = context.Background()
-			j.getTemporaryScaleMetrics(ctx)
+			j.getConditionalReplicasTarget(ctx)
 			if err := j.updateStatus(ctx); err != nil {
 				logger.Error(err, "unable to update status")
 			}
