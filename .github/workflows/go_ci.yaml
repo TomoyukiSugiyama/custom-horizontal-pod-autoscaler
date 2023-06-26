@@ -3,7 +3,7 @@ name: Go CI
 on: [push]
 
 jobs:
-  build:
+  test:
 
     runs-on: ubuntu-latest
 
@@ -11,3 +11,7 @@ jobs:
     - uses: actions/checkout@v3
     - name: test application
       run: make test
+    - name: upload coverage reports to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
