@@ -1,0 +1,19 @@
+---
+API:
+  - api/**/*
+
+Controller:
+  - cmd/main.go
+  - internal/controller/**/*
+
+Metrics:
+  - internal/metrics/**/*
+
+GitHub Actions:
+  - .github/workflows/**/*
+  - .github/dependabot.yml
+  - .github/labeler.yml
+
+Documentation:
+  - README.md
+  - docs/**/*

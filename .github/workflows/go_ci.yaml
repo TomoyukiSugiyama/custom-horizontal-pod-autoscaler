@@ -1,0 +1,13 @@
+name: Go CI
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: test application
+      run: make test
