@@ -32,7 +32,7 @@ type Condition struct {
 	Id string `json:"id"`
 }
 
-type ConditionalReplicalTargetSpec struct {
+type ConditionalReplicasTargetSpec struct {
 	Target    string    `json:"target"`
 	Condition Condition `json:"condition"`
 	// minReplicas is the lower limit for the number of replicas to which the custom autoscaler
@@ -88,7 +88,7 @@ type CustomHorizontalPodAutoscalerSpec struct {
 	// If not set, the default minReplicas and maxReplicas of spec are used.
 	// +listType=atomic
 	// +optional
-	ConditionalReplicalTargets []ConditionalReplicalTargetSpec `json:"temporaryScaleMetrics"`
+	ConditionalReplicasTargets []ConditionalReplicasTargetSpec `json:"conditionalReplicasTargets"`
 	// behavior configures the scaling behavior of the target
 	// in both Up and Down directions (scaleUp and scaleDown fields respectively).
 	// If not set, the default HPAScalingRules for scale up and scale down are used.

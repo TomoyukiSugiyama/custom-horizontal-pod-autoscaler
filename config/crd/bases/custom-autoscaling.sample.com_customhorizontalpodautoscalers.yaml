@@ -168,6 +168,56 @@ spec:
                         type: integer
                     type: object
                 type: object
+              conditionalReplicasTargets:
+                description: If temporaryScaleMetrics is set, the minReplicas and
+                  maxReplicas of temporaryScaleMetrics are used in preference to the
+                  minReplicas and maxReplicas of spec only when the corresponding
+                  metrics for name and duration of temporaryScaleMetrics are 1. Metric
+                  with the highest value of maxReplicas of temporaryScaleMetrics are
+                  enabled. If not set, the default minReplicas and maxReplicas of
+                  spec are used.
+                items:
+                  properties:
+                    condition:
+                      description: 'EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO
+                        OWN! NOTE: json tags are required.  Any new fields you add
+                        must have json tags for the fields to be serialized.'
+                      properties:
+                        id:
+                          description: duration is a label indicating the duration
+                            of the target metric that determines the upper and lower
+                            limits of the number of pods during the temporary scale.
+                          type: string
+                        type:
+                          description: type is a label of the target metric that determines
+                            the upper and lower limits of the number of pods during
+                            a temporary scale.
+                          type: string
+                      required:
+                      - id
+                      - type
+                      type: object
+                    maxReplicas:
+                      description: maxReplicas is the upper limit for the number of
+                        replicas to which the custom autoscaler can scale up according
+                        to the temporary scale metrics. It cannot be less that minReplicas.
+                      format: int32
+                      type: integer
+                    minReplicas:
+                      description: minReplicas is the lower limit for the number of
+                        replicas to which the custom autoscaler can scale up according
+                        to the temporary scale metrics. It defaults to 1 pod.
+                      format: int32
+                      type: integer
+                    target:
+                      type: string
+                  required:
+                  - condition
+                  - maxReplicas
+                  - target
+                  type: object
+                type: array
+                x-kubernetes-list-type: atomic
               horizontalPodAutoscalerName:
                 description: 'horizontalPodAutoscalerName must be unique within a
                   namespace. Is required when creating resources, although some resources
@@ -685,56 +735,6 @@ spec:
                 - kind
                 - name
                 type: object
-              temporaryScaleMetrics:
-                description: If temporaryScaleMetrics is set, the minReplicas and
-                  maxReplicas of temporaryScaleMetrics are used in preference to the
-                  minReplicas and maxReplicas of spec only when the corresponding
-                  metrics for name and duration of temporaryScaleMetrics are 1. Metric
-                  with the highest value of maxReplicas of temporaryScaleMetrics are
-                  enabled. If not set, the default minReplicas and maxReplicas of
-                  spec are used.
-                items:
-                  properties:
-                    condition:
-                      description: 'EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO
-                        OWN! NOTE: json tags are required.  Any new fields you add
-                        must have json tags for the fields to be serialized.'
-                      properties:
-                        id:
-                          description: duration is a label indicating the duration
-                            of the target metric that determines the upper and lower
-                            limits of the number of pods during the temporary scale.
-                          type: string
-                        type:
-                          description: type is a label of the target metric that determines
-                            the upper and lower limits of the number of pods during
-                            a temporary scale.
-                          type: string
-                      required:
-                      - id
-                      - type
-                      type: object
-                    maxReplicas:
-                      description: maxReplicas is the upper limit for the number of
-                        replicas to which the custom autoscaler can scale up according
-                        to the temporary scale metrics. It cannot be less that minReplicas.
-                      format: int32
-                      type: integer
-                    minReplicas:
-                      description: minReplicas is the lower limit for the number of
-                        replicas to which the custom autoscaler can scale up according
-                        to the temporary scale metrics. It defaults to 1 pod.
-                      format: int32
-                      type: integer
-                    target:
-                      type: string
-                  required:
-                  - condition
-                  - maxReplicas
-                  - target
-                  type: object
-                type: array
-                x-kubernetes-list-type: atomic
             required:
             - maxReplicas
             - scaleTargetRef
