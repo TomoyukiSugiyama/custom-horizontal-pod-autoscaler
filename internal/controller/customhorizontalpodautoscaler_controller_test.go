@@ -84,7 +84,8 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 		time.Sleep(100 * time.Millisecond)
 
 		mgr, err := ctrl.NewManager(cfg, ctrl.Options{
-			Scheme: scheme.Scheme,
+			Scheme:             scheme.Scheme,
+			MetricsBindAddress: "0",
 		})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -111,6 +112,7 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		ctx, cancel := context.WithCancel(ctx)
+
 		stopFunc = cancel
 		go func() {
 			err := mgr.Start(ctx)
