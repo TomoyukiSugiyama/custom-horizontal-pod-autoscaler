@@ -84,7 +84,7 @@ var _ = Describe("Integration test", func() {
 		go collector.Start(ctx)
 		time.Sleep(100 * time.Millisecond)
 
-		reconciler := NewReconcile(k8sClient, scheme.Scheme, collector)
+		reconciler := NewReconcile(k8sClient, scheme.Scheme, collector, WithSyncersInterval(50*time.Millisecond))
 
 		err = reconciler.SetupWithManager(mgr)
 		Expect(err).NotTo(HaveOccurred())
