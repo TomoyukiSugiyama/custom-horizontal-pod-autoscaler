@@ -35,12 +35,12 @@ func FakeNew(desiredConditionalReplicasSpec apiv1.ConditionalReplicasSpec) *Fake
 	}
 }
 
-func (j *FakeSyncer) Start(ctx context.Context) {
+func (s *FakeSyncer) Start(ctx context.Context) {
 }
 
-func (j *FakeSyncer) Stop() {
+func (s *FakeSyncer) Stop() {
 }
 
-func (j *FakeSyncer) GetDesiredMinMaxReplicas() apiv1.ConditionalReplicasSpec {
-	return j.desiredConditionalReplicasSpec
+func (s *FakeSyncer) GetDesiredMinMaxReplicas() apiv1.ConditionalReplicasSpec {
+	return s.desiredConditionalReplicasSpec
 }

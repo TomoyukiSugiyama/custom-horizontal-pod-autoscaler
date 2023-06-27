@@ -48,7 +48,7 @@ var _ Syncer = (*syncer)(nil)
 type Option func(*syncer)
 
 func New(metricsCollector metricspkg.MetricsCollector, ctrlClient ctrlClient.Client, namespacedName types.NamespacedName, opts ...Option) (Syncer, error) {
-	j := &syncer{
+	s := &syncer{
 		interval:                       30 * time.Second,
 		stopCh:                         make(chan struct{}),
 		metricsCollector:               metricsCollector,
@@ -58,23 +58,23 @@ func New(metricsCollector metricspkg.MetricsCollector, ctrlClient ctrlClient.Cli
 	}
 
 	for _, opt := range opts {
-		opt(j)
+		opt(s)
 	}
 
-	return j, nil
+	return s, nil
 }
 
 func WithSyncersInterval(interval time.Duration) Option {
-	return func(j *syncer) {
-		j.interval = interval
+	return func(s *syncer) {
+		s.interval = interval
 	}
 }
 
-func (j *syncer) getConditionalReplicasTarget(ctx context.Context) {
+func (s *syncer) getConditionalReplicasTarget(ctx context.Context) {
 	logger := log.FromContext(ctx)
 	var current customautoscalingv1.CustomHorizontalPodAutoscaler
-	j.ctrlClient.Get(ctx, j.namespacedName, &current)
-	j.updateDesiredMinMaxReplicas(ctx)
+	s.ctrlClient.Get(ctx, s.namespacedName, &current)
+	s.updateDesiredMinMaxReplicas(ctx)
 
 	for _, target := range current.Spec.ConditionalReplicasSpecs {
 		logger.Info(
@@ -88,56 +88,56 @@ func (j *syncer) getConditionalReplicasTarget(ctx context.Context) {
 
 	logger.Info(
 		"update desired min and max replicas",
-		"minReplicas", j.desiredConditionalReplicasSpec.MinReplicas,
-		"maxReplicas", j.desiredConditionalReplicasSpec.MaxReplicas,
+		"minReplicas", s.desiredConditionalReplicasSpec.MinReplicas,
+		"maxReplicas", s.desiredConditionalReplicasSpec.MaxReplicas,
 	)
 }
 
-func (j *syncer) updateDesiredMinMaxReplicas(ctx context.Context) {
+func (s *syncer) updateDesiredMinMaxReplicas(ctx context.Context) {
 	var current customautoscalingv1.CustomHorizontalPodAutoscaler
-	j.ctrlClient.Get(ctx, j.namespacedName, &current)
+	s.ctrlClient.Get(ctx, s.namespacedName, &current)
 
-	j.desiredConditionalReplicasSpec.MinReplicas = pointer.Int32(1)
+	s.desiredConditionalReplicasSpec.MinReplicas = pointer.Int32(1)
 	if current.Spec.MinReplicas != nil {
-		j.desiredConditionalReplicasSpec.MinReplicas = current.Spec.MinReplicas
+		s.desiredConditionalReplicasSpec.MinReplicas = current.Spec.MinReplicas
 	}
-	j.desiredConditionalReplicasSpec.MaxReplicas = &current.Spec.MaxReplicas
+	s.desiredConditionalReplicasSpec.MaxReplicas = &current.Spec.MaxReplicas
 
 	for _, target := range current.Spec.ConditionalReplicasSpecs {
 		k := customautoscalingv1.Condition{
 			Type: target.Condition.Type,
 			Id:   target.Condition.Id,
 		}
-		res := j.metricsCollector.GetPersedQueryResult()
+		res := s.metricsCollector.GetPersedQueryResult()
 		v, isExist := res[k]
-		if isExist && v == "1" && *j.desiredConditionalReplicasSpec.MaxReplicas <= *target.MaxReplicas {
-			j.desiredConditionalReplicasSpec.MinReplicas = pointer.Int32(1)
+		if isExist && v == "1" && *s.desiredConditionalReplicasSpec.MaxReplicas <= *target.MaxReplicas {
+			s.desiredConditionalReplicasSpec.MinReplicas = pointer.Int32(1)
 			if target.MinReplicas != nil {
-				j.desiredConditionalReplicasSpec.MinReplicas = target.MinReplicas
+				s.desiredConditionalReplicasSpec.MinReplicas = target.MinReplicas
 			}
-			j.desiredConditionalReplicasSpec.MaxReplicas = target.MaxReplicas
+			s.desiredConditionalReplicasSpec.MaxReplicas = target.MaxReplicas
 		}
 	}
 }
 
-func (j *syncer) updateStatus(ctx context.Context) error {
+func (s *syncer) updateStatus(ctx context.Context) error {
 	var current customautoscalingv1.CustomHorizontalPodAutoscaler
-	j.ctrlClient.Get(ctx, j.namespacedName, &current)
-	current.Status.DesiredMinReplicas = *j.desiredConditionalReplicasSpec.MinReplicas
-	current.Status.DesiredMaxReplicas = *j.desiredConditionalReplicasSpec.MaxReplicas
-	return j.ctrlClient.Status().Update(ctx, &current)
+	s.ctrlClient.Get(ctx, s.namespacedName, &current)
+	current.Status.DesiredMinReplicas = *s.desiredConditionalReplicasSpec.MinReplicas
+	current.Status.DesiredMaxReplicas = *s.desiredConditionalReplicasSpec.MaxReplicas
+	return s.ctrlClient.Status().Update(ctx, &current)
 }
 
-func (j *syncer) GetDesiredMinMaxReplicas() customautoscalingv1.ConditionalReplicasSpec {
-	return j.desiredConditionalReplicasSpec
+func (s *syncer) GetDesiredMinMaxReplicas() customautoscalingv1.ConditionalReplicasSpec {
+	return s.desiredConditionalReplicasSpec
 }
 
-func (j *syncer) Start(ctx context.Context) {
+func (s *syncer) Start(ctx context.Context) {
 	logger := log.FromContext(ctx)
-	logger.Info("starting job")
-	defer logger.Info("shut down job")
+	logger.Info("starting syncer")
+	defer logger.Info("shut down syncer")
 
-	ticker := time.NewTicker(j.interval)
+	ticker := time.NewTicker(s.interval)
 	defer ticker.Stop()
 
 	for {
@@ -145,17 +145,17 @@ func (j *syncer) Start(ctx context.Context) {
 		case <-ticker.C:
 			logger.Info("received scheduler tick")
 			ctx = context.Background()
-			j.getConditionalReplicasTarget(ctx)
-			if err := j.updateStatus(ctx); err != nil {
+			s.getConditionalReplicasTarget(ctx)
+			if err := s.updateStatus(ctx); err != nil {
 				logger.Error(err, "unable to update status")
 			}
-		case <-j.stopCh:
+		case <-s.stopCh:
 			logger.Info("received stop signal")
 			return
 		}
 	}
 }
 
-func (j *syncer) Stop() {
-	close(j.stopCh)
+func (s *syncer) Stop() {
+	close(s.stopCh)
 }
