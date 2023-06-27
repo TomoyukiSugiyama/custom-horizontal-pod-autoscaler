@@ -36,11 +36,11 @@ var _ = Describe("Syncer", func() {
 	ctx := context.Background()
 
 	It("Should get desiredMinMaxReplicas", func() {
-		mt := metrics.MetricType{
+		mt := customautoscalingv1.Condition{
 			Type: "training",
 			Id:   "7-21",
 		}
-		persedQueryResults := map[metrics.MetricType]string{mt: "1"}
+		persedQueryResults := map[customautoscalingv1.Condition]string{mt: "1"}
 		metricsCollector := metrics.FakeNewCollector(persedQueryResults)
 		namespacedName := types.NamespacedName{Namespace: "dummy-namespace", Name: "test-customhpa"}
 		syncer, err := New(metricsCollector, k8sClient, namespacedName, WithSyncersInterval(10*time.Millisecond))

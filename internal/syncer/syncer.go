@@ -104,7 +104,7 @@ func (j *syncer) updateDesiredMinMaxReplicas(ctx context.Context) {
 	j.desiredConditionalReplicasSpec.MaxReplicas = &current.Spec.MaxReplicas
 
 	for _, target := range current.Spec.ConditionalReplicasSpecs {
-		k := metricspkg.MetricType{
+		k := customautoscalingv1.Condition{
 			Type: target.Condition.Type,
 			Id:   target.Condition.Id,
 		}

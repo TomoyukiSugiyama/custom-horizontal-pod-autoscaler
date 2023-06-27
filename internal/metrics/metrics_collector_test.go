@@ -27,6 +27,7 @@ import (
 	. "github.com/onsi/gomega"
 	prometheusapi "github.com/prometheus/client_golang/api"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
 )
 
 var _ = Describe("Syncer", func() {
@@ -47,7 +48,7 @@ var _ = Describe("Syncer", func() {
 		time.Sleep(100 * time.Millisecond)
 
 		res := collector.GetPersedQueryResult()
-		Expect(res[MetricType{Id: "7-21", Type: "training"}]).Should(Equal("1"))
+		Expect(res[customautoscalingv1.Condition{Id: "7-21", Type: "training"}]).Should(Equal("1"))
 
 	})
 
