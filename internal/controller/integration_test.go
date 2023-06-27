@@ -24,6 +24,7 @@ var _ = Describe("Integration test", func() {
 	ctx := context.Background()
 	var stopFunc func()
 	var fakePrometheus *httptest.Server
+	var collector metricspkg.MetricsCollector
 
 	It("Should create HorizontalPodAutoscaler", func() {
 		customHorizontalPodAutoscaler := util.NewCustomHorizontalPodAutoscaler()
@@ -61,6 +62,27 @@ var _ = Describe("Integration test", func() {
 		Expect(hpa.Spec.Metrics).Should(Equal(expectedMetrics))
 	})
 
+	It("Should exist HorizontalPodAutoscaler after delete", func() {
+		customHorizontalPodAutoscaler := util.NewCustomHorizontalPodAutoscaler()
+		err := k8sClient.Create(ctx, customHorizontalPodAutoscaler)
+		Expect(err).NotTo(HaveOccurred())
+		time.Sleep(100 * time.Millisecond)
+		hpa := autoscalingv2.HorizontalPodAutoscaler{}
+		Eventually(func() error {
+			return k8sClient.Get(ctx, client.ObjectKey{Namespace: "dummy-namespace", Name: "test-hpa"}, &hpa)
+		}).Should(Succeed())
+		time.Sleep(100 * time.Millisecond)
+		Eventually(func() error {
+			return k8sClient.Delete(ctx, &hpa)
+		}).Should(Succeed())
+		time.Sleep(100 * time.Millisecond)
+		Eventually(func() error {
+			return k8sClient.Get(ctx, client.ObjectKey{Namespace: "dummy-namespace", Name: "test-hpa"}, &hpa)
+		}).Should(Succeed())
+
+		Expect(hpa.Name).Should(Equal("test-hpa"))
+	})
+
 	BeforeEach(func() {
 		err := k8sClient.DeleteAllOf(ctx, &customautoscalingv1.CustomHorizontalPodAutoscaler{}, client.InNamespace("dummy-namespace"))
 		Expect(err).NotTo(HaveOccurred())
@@ -78,7 +100,7 @@ var _ = Describe("Integration test", func() {
 		client, err := prometheusapi.NewClient(prometheusapi.Config{Address: fakePrometheus.URL})
 		Expect(err).NotTo(HaveOccurred())
 		api := prometheusv1.NewAPI(client)
-		collector, err := metricspkg.NewCollector(api, metricspkg.WithMetricsCollectorInterval(50*time.Millisecond))
+		collector, err = metricspkg.NewCollector(api, metricspkg.WithMetricsCollectorInterval(50*time.Millisecond))
 		Expect(err).NotTo(HaveOccurred())
 
 		go collector.Start(ctx)
@@ -103,7 +125,8 @@ var _ = Describe("Integration test", func() {
 
 	AfterEach(func() {
 		stopFunc()
-		time.Sleep(100 * time.Millisecond)
+		collector.Stop()
 		fakePrometheus.Close()
+		time.Sleep(100 * time.Millisecond)
 	})
 })
