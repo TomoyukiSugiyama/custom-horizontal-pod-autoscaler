@@ -223,7 +223,6 @@ func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(
 	ctx context.Context,
 	customHPA customautoscalingv1.CustomHorizontalPodAutoscaler,
 ) (ctrl.Result, error) {
-
 	var currendCustomHPA customautoscalingv1.CustomHorizontalPodAutoscaler
 	err := r.Get(ctx, client.ObjectKey{Namespace: customHPA.Namespace, Name: customHPA.Name}, &currendCustomHPA)
 	if err != nil {
@@ -253,14 +252,17 @@ func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(
 		return ctrl.Result{}, err
 	}
 
-	if currendCustomHPA.Spec.MinReplicas != currentHPA.Spec.MinReplicas {
+	if currentHPA.Status.CurrentReplicas != currentHPA.Status.DesiredReplicas {
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	if currendCustomHPA.Spec.MaxReplicas != currentHPA.Spec.MaxReplicas {
+	if *currentHPA.Spec.MinReplicas != currendCustomHPA.Status.DesiredMinReplicas {
 		return ctrl.Result{Requeue: true}, nil
 	}
 
+	if currentHPA.Spec.MaxReplicas != currendCustomHPA.Status.DesiredMaxReplicas {
+		return ctrl.Result{Requeue: true}, nil
+	}
 	return ctrl.Result{}, nil
 }
 
