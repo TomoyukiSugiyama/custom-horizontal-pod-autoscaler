@@ -22,22 +22,20 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
-
-	autoscalingv2 "k8s.io/api/autoscaling/v2"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/scheme"
-
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	prometheusapi "github.com/prometheus/client_golang/api"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/utils/pointer"
 	apiv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
 	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
 	metricspkg "sample.com/custom-horizontal-pod-autoscaler/internal/metrics"
+	syncerpkg "sample.com/custom-horizontal-pod-autoscaler/internal/syncer"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
@@ -95,9 +93,9 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 			MinReplicas: pointer.Int32(1),
 			MaxReplicas: pointer.Int32(5),
 		}
-		fakeMetricsJobClient := metricspkg.FakeNew(desiredSpec)
+		fakeMetricsJobClient := syncerpkg.FakeNew(desiredSpec)
 		namespacedName := types.NamespacedName{Namespace: "dummy-namespace", Name: "test-customhpa"}
-		fakeMetricsJobClients := map[types.NamespacedName]metricspkg.MetricsJobClient{namespacedName: fakeMetricsJobClient}
+		fakeMetricsJobClients := map[types.NamespacedName]syncerpkg.MetricsJobClient{namespacedName: fakeMetricsJobClient}
 
 		client, err := prometheusapi.NewClient(prometheusapi.Config{Address: "http://localhost:9090"})
 		Expect(err).NotTo(HaveOccurred())

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package metrics
+package syncer
 
 import (
 	"context"
@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
 	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
+	"sample.com/custom-horizontal-pod-autoscaler/internal/metrics"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -35,12 +36,12 @@ var _ = Describe("MetricsJobClient", func() {
 	ctx := context.Background()
 
 	It("Should get desiredMinMaxReplicas", func() {
-		mt := metricType{
-			jobType:  "training",
-			duration: "7-21",
+		mt := metrics.MetricType{
+			JobType:  "training",
+			Duration: "7-21",
 		}
-		persedQueryResults := map[metricType]string{mt: "1"}
-		metricsCollector := FakeNewCollector(persedQueryResults)
+		persedQueryResults := map[metrics.MetricType]string{mt: "1"}
+		metricsCollector := metrics.FakeNewCollector(persedQueryResults)
 		namespacedName := types.NamespacedName{Namespace: "dummy-namespace", Name: "test-customhpa"}
 		metricsJobClient, err := New(metricsCollector, k8sClient, namespacedName, WithMetricsJobClientsInterval(10*time.Millisecond))
 		Expect(err).NotTo(HaveOccurred())

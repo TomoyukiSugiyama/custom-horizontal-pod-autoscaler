@@ -24,14 +24,13 @@ import (
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/promql/parser"
-
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 type MetricsCollector interface {
 	Start(ctx context.Context)
 	Stop()
-	GetPersedQueryResult() map[metricType]string
+	GetPersedQueryResult() map[MetricType]string
 }
 
 type metricsCollector struct {
@@ -39,13 +38,13 @@ type metricsCollector struct {
 	interval           time.Duration
 	stopCh             chan struct{}
 	query              string
-	persedQueryResults map[metricType]string
+	persedQueryResults map[MetricType]string
 	mu                 sync.RWMutex
 }
 
-type metricType struct {
-	duration string
-	jobType  string
+type MetricType struct {
+	Duration string
+	JobType  string
 }
 
 type CollectorOption func(*metricsCollector)
@@ -71,7 +70,7 @@ func WithMetricsCollectorInterval(interval time.Duration) CollectorOption {
 	}
 }
 
-func (c *metricsCollector) GetPersedQueryResult() map[metricType]string {
+func (c *metricsCollector) GetPersedQueryResult() map[MetricType]string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.persedQueryResults
@@ -95,8 +94,8 @@ func (c *metricsCollector) getTemporaryScaleMetrics(ctx context.Context) {
 	for key, queryResult := range c.persedQueryResults {
 		logger.Info(
 			"parsed query result",
-			"duration", key.duration,
-			"type", key.jobType,
+			"duration", key.Duration,
+			"type", key.JobType,
 			"value", queryResult,
 		)
 	}
@@ -105,15 +104,15 @@ func (c *metricsCollector) getTemporaryScaleMetrics(ctx context.Context) {
 func (c *metricsCollector) perseMetrics(samples model.Vector) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.persedQueryResults = make(map[metricType]string)
+	c.persedQueryResults = make(map[MetricType]string)
 	for _, sample := range samples {
 		metrics, err := parser.ParseMetric(sample.Metric.String())
 		if err != nil {
 			return err
 		}
-		k := metricType{
-			jobType:  metrics.Map()["type"],
-			duration: metrics.Map()["duration"],
+		k := MetricType{
+			JobType:  metrics.Map()["type"],
+			Duration: metrics.Map()["duration"],
 		}
 		c.persedQueryResults[k] = sample.Value.String()
 	}

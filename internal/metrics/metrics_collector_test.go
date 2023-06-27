@@ -47,7 +47,7 @@ var _ = Describe("MetricsJobClient", func() {
 		time.Sleep(100 * time.Millisecond)
 
 		res := collector.GetPersedQueryResult()
-		Expect(res[metricType{duration: "7-21", jobType: "training"}]).Should(Equal("1"))
+		Expect(res[MetricType{Duration: "7-21", JobType: "training"}]).Should(Equal("1"))
 
 	})
 

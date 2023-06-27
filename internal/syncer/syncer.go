@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package metrics
+package syncer
 
 import (
 	"context"
@@ -24,6 +24,7 @@ import (
 	"k8s.io/utils/pointer"
 	apiv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
 	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
+	"sample.com/custom-horizontal-pod-autoscaler/internal/metrics"
 	ctrlClient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -35,7 +36,7 @@ type MetricsJobClient interface {
 }
 
 type metricsJobClient struct {
-	metricsCollector               MetricsCollector
+	metricsCollector               metrics.MetricsCollector
 	ctrlClient                     ctrlClient.Client
 	interval                       time.Duration
 	stopCh                         chan struct{}
@@ -47,7 +48,7 @@ var _ MetricsJobClient = (*metricsJobClient)(nil)
 
 type Option func(*metricsJobClient)
 
-func New(metricsCollector MetricsCollector, ctrlClient ctrlClient.Client, namespacedName types.NamespacedName, opts ...Option) (MetricsJobClient, error) {
+func New(metricsCollector metrics.MetricsCollector, ctrlClient ctrlClient.Client, namespacedName types.NamespacedName, opts ...Option) (MetricsJobClient, error) {
 	j := &metricsJobClient{
 		interval:                       30 * time.Second,
 		stopCh:                         make(chan struct{}),
@@ -104,9 +105,9 @@ func (j *metricsJobClient) updateDesiredMinMaxReplicas(ctx context.Context) {
 	j.desiredConditionalReplicasSpec.MaxReplicas = &current.Spec.MaxReplicas
 
 	for _, target := range current.Spec.ConditionalReplicasSpecs {
-		k := metricType{
-			jobType:  target.Condition.Type,
-			duration: target.Condition.Id,
+		k := metrics.MetricType{
+			JobType:  target.Condition.Type,
+			Duration: target.Condition.Id,
 		}
 		res := j.metricsCollector.GetPersedQueryResult()
 		v, isExist := res[k]
