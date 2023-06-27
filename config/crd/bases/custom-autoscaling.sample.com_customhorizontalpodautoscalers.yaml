@@ -168,30 +168,29 @@ spec:
                         type: integer
                     type: object
                 type: object
-              conditionalReplicasTargets:
-                description: If temporaryScaleMetrics is set, the minReplicas and
-                  maxReplicas of temporaryScaleMetrics are used in preference to the
-                  minReplicas and maxReplicas of spec only when the corresponding
-                  metrics for name and duration of temporaryScaleMetrics are 1. Metric
-                  with the highest value of maxReplicas of temporaryScaleMetrics are
-                  enabled. If not set, the default minReplicas and maxReplicas of
-                  spec are used.
+              conditionalReplicas:
+                description: conditionalReplicasSpecs is a list of conditional replica
+                  specifications that allows defining different scaling behavior based
+                  on specific conditions. If conditionalReplicasSpecs is set, the
+                  minReplicas and maxReplicas of conditionalReplicasSpecs are used
+                  in preference to the minReplicas and maxReplicas of spec only when
+                  the corresponding value for condition of conditionalReplicasSpec
+                  are 1. conditionalReplicasSpec with the highest value of maxReplicas
+                  are enabled. If not set, the default minReplicas and maxReplicas
+                  of spec are used.
                 items:
                   properties:
                     condition:
-                      description: 'EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO
-                        OWN! NOTE: json tags are required.  Any new fields you add
-                        must have json tags for the fields to be serialized.'
+                      description: condition is the condition that needs to be satisfied
+                        for the scaling behavior to be applied.
                       properties:
                         id:
-                          description: duration is a label indicating the duration
-                            of the target metric that determines the upper and lower
-                            limits of the number of pods during the temporary scale.
+                          description: id is the identifier of the condition. The
+                            id must be set so that it is unique within each type.
                           type: string
                         type:
-                          description: type is a label of the target metric that determines
-                            the upper and lower limits of the number of pods during
-                            a temporary scale.
+                          description: type is the type of the condition. This field
+                            is used to specify the type or category of the condition.
                           type: string
                       required:
                       - id
@@ -209,12 +208,9 @@ spec:
                         to the temporary scale metrics. It defaults to 1 pod.
                       format: int32
                       type: integer
-                    target:
-                      type: string
                   required:
                   - condition
                   - maxReplicas
-                  - target
                   type: object
                 type: array
                 x-kubernetes-list-type: atomic

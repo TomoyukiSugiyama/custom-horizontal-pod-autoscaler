@@ -24,16 +24,14 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 type Condition struct {
-	// type is a label of the target metric that determines the upper and lower limits
-	// of the number of pods during a temporary scale.
+	// type is the type of the condition. This field is used to specify the type or category of the condition.
 	Type string `json:"type"`
-	// duration is a label indicating the duration of the target metric that determines
-	// the upper and lower limits of the number of pods during the temporary scale.
+	// id is the identifier of the condition. The id must be set so that it is unique within each type.
 	Id string `json:"id"`
 }
 
-type ConditionalReplicasTargetSpec struct {
-	Target    string    `json:"target"`
+type ConditionalReplicasSpec struct {
+	// condition is the condition that needs to be satisfied for the scaling behavior to be applied.
 	Condition Condition `json:"condition"`
 	// minReplicas is the lower limit for the number of replicas to which the custom autoscaler
 	// can scale up according to the temporary scale metrics. It defaults to 1 pod.
@@ -81,14 +79,15 @@ type CustomHorizontalPodAutoscalerSpec struct {
 	// +listType=atomic
 	// +optional
 	Metrics []autoscalingv2.MetricSpec `json:"metrics,omitempty" protobuf:"bytes,4,rep,name=metrics"`
-	// If temporaryScaleMetrics is set, the minReplicas and maxReplicas of temporaryScaleMetrics are used
-	// in preference to the minReplicas and maxReplicas of spec only when the corresponding metrics
-	// for name and duration of temporaryScaleMetrics are 1.
-	// Metric with the highest value of maxReplicas of temporaryScaleMetrics are enabled.
+	// conditionalReplicasSpecs is a list of conditional replica specifications that allows defining different
+	// scaling behavior based on specific conditions.
+	// If conditionalReplicasSpecs is set, the minReplicas and maxReplicas of conditionalReplicasSpecs are used
+	// in preference to the minReplicas and maxReplicas of spec only when the corresponding value for condition
+	// of conditionalReplicasSpec are 1. conditionalReplicasSpec with the highest value of maxReplicas are enabled.
 	// If not set, the default minReplicas and maxReplicas of spec are used.
 	// +listType=atomic
 	// +optional
-	ConditionalReplicasTargets []ConditionalReplicasTargetSpec `json:"conditionalReplicasTargets"`
+	ConditionalReplicasSpecs []ConditionalReplicasSpec `json:"conditionalReplicas"`
 	// behavior configures the scaling behavior of the target
 	// in both Up and Down directions (scaleUp and scaleDown fields respectively).
 	// If not set, the default HPAScalingRules for scale up and scale down are used.
