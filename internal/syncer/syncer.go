@@ -105,8 +105,8 @@ func (j *syncer) updateDesiredMinMaxReplicas(ctx context.Context) {
 
 	for _, target := range current.Spec.ConditionalReplicasSpecs {
 		k := metricspkg.MetricType{
-			JobType:  target.Condition.Type,
-			Duration: target.Condition.Id,
+			JobType: target.Condition.Type,
+			Id:      target.Condition.Id,
 		}
 		res := j.metricsCollector.GetPersedQueryResult()
 		v, isExist := res[k]

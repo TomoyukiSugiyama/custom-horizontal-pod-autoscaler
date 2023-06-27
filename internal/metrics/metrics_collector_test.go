@@ -47,7 +47,7 @@ var _ = Describe("Syncer", func() {
 		time.Sleep(100 * time.Millisecond)
 
 		res := collector.GetPersedQueryResult()
-		Expect(res[MetricType{Duration: "7-21", JobType: "training"}]).Should(Equal("1"))
+		Expect(res[MetricType{Id: "7-21", JobType: "training"}]).Should(Equal("1"))
 
 	})
 
@@ -66,7 +66,7 @@ func NewFakePrometheusServer() *httptest.Server {
 		Job         string `json:"job"`
 		Instance    string `json:"instance"`
 		ExportedJob string `json:"exported_job"`
-		Duration    string `json:"duration"`
+		Id          string `json:"id"`
 		Type        string `json:"type"`
 	}
 
@@ -96,7 +96,7 @@ func NewFakePrometheusServer() *httptest.Server {
 						Job:         "prometheus",
 						Instance:    "localhost:9090",
 						ExportedJob: "temporary_scale_job_7-21_training",
-						Duration:    "7-21",
+						Id:          "7-21",
 						Type:        "training",
 					},
 					Value: []byte(`[1435781451.781,"1"]`),

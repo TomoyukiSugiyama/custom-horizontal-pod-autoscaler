@@ -37,8 +37,8 @@ var _ = Describe("Syncer", func() {
 
 	It("Should get desiredMinMaxReplicas", func() {
 		mt := metrics.MetricType{
-			JobType:  "training",
-			Duration: "7-21",
+			JobType: "training",
+			Id:      "7-21",
 		}
 		persedQueryResults := map[metrics.MetricType]string{mt: "1"}
 		metricsCollector := metrics.FakeNewCollector(persedQueryResults)
