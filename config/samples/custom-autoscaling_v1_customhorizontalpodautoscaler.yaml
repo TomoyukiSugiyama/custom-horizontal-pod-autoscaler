@@ -33,5 +33,5 @@ spec:
   - condition:
       type: training
       id: 7-21
-    minReplicas: 2
-    maxReplicas: 4
+    minReplicas: 5
+    maxReplicas: 10
