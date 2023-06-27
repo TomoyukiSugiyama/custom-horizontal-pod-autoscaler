@@ -168,7 +168,7 @@ spec:
                         type: integer
                     type: object
                 type: object
-              conditionalReplicas:
+              conditionalReplicasSpecs:
                 description: conditionalReplicasSpecs is a list of conditional replica
                   specifications that allows defining different scaling behavior based
                   on specific conditions. If conditionalReplicasSpecs is set, the
