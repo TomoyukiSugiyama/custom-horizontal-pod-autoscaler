@@ -22,9 +22,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
-	apiv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
 	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
-	"sample.com/custom-horizontal-pod-autoscaler/internal/metrics"
+	metricspkg "sample.com/custom-horizontal-pod-autoscaler/internal/metrics"
 	ctrlClient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -32,15 +31,15 @@ import (
 type Syncer interface {
 	Start(ctx context.Context)
 	Stop()
-	GetDesiredMinMaxReplicas() apiv1.ConditionalReplicasSpec
+	GetDesiredMinMaxReplicas() customautoscalingv1.ConditionalReplicasSpec
 }
 
 type syncer struct {
-	metricsCollector               metrics.MetricsCollector
+	metricsCollector               metricspkg.MetricsCollector
 	ctrlClient                     ctrlClient.Client
 	interval                       time.Duration
 	stopCh                         chan struct{}
-	desiredConditionalReplicasSpec apiv1.ConditionalReplicasSpec
+	desiredConditionalReplicasSpec customautoscalingv1.ConditionalReplicasSpec
 	namespacedName                 types.NamespacedName
 }
 
@@ -48,14 +47,14 @@ var _ Syncer = (*syncer)(nil)
 
 type Option func(*syncer)
 
-func New(metricsCollector metrics.MetricsCollector, ctrlClient ctrlClient.Client, namespacedName types.NamespacedName, opts ...Option) (Syncer, error) {
+func New(metricsCollector metricspkg.MetricsCollector, ctrlClient ctrlClient.Client, namespacedName types.NamespacedName, opts ...Option) (Syncer, error) {
 	j := &syncer{
 		interval:                       30 * time.Second,
 		stopCh:                         make(chan struct{}),
 		metricsCollector:               metricsCollector,
 		ctrlClient:                     ctrlClient,
 		namespacedName:                 namespacedName,
-		desiredConditionalReplicasSpec: apiv1.ConditionalReplicasSpec{},
+		desiredConditionalReplicasSpec: customautoscalingv1.ConditionalReplicasSpec{},
 	}
 
 	for _, opt := range opts {
@@ -105,7 +104,7 @@ func (j *syncer) updateDesiredMinMaxReplicas(ctx context.Context) {
 	j.desiredConditionalReplicasSpec.MaxReplicas = &current.Spec.MaxReplicas
 
 	for _, target := range current.Spec.ConditionalReplicasSpecs {
-		k := metrics.MetricType{
+		k := metricspkg.MetricType{
 			JobType:  target.Condition.Type,
 			Duration: target.Condition.Id,
 		}
@@ -129,7 +128,7 @@ func (j *syncer) updateStatus(ctx context.Context) error {
 	return j.ctrlClient.Status().Update(ctx, &current)
 }
 
-func (j *syncer) GetDesiredMinMaxReplicas() apiv1.ConditionalReplicasSpec {
+func (j *syncer) GetDesiredMinMaxReplicas() customautoscalingv1.ConditionalReplicasSpec {
 	return j.desiredConditionalReplicasSpec
 }
 
