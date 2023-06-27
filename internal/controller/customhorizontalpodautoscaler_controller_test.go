@@ -30,7 +30,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/utils/pointer"
-	apiv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
 	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
 	metricspkg "sample.com/custom-horizontal-pod-autoscaler/internal/metrics"
 	syncerpkg "sample.com/custom-horizontal-pod-autoscaler/internal/syncer"
@@ -89,7 +88,7 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 		})
 		Expect(err).NotTo(HaveOccurred())
 
-		desiredSpec := apiv1.ConditionalReplicasSpec{
+		desiredSpec := customautoscalingv1.ConditionalReplicasSpec{
 			MinReplicas: pointer.Int32(1),
 			MaxReplicas: pointer.Int32(5),
 		}
