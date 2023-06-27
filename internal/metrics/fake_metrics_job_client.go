@@ -23,15 +23,15 @@ import (
 )
 
 type FakeMetricsJobClient struct {
-	desiredTemporaryScaleMetricSpec apiv1.TemporaryScaleMetricSpec
+	desiredConditionalReplicasSpec apiv1.ConditionalReplicasSpec
 }
 
 // Guarantee *FakeMetricsJobClient implements JobClient.
 var _ MetricsJobClient = (*FakeMetricsJobClient)(nil)
 
-func FakeNew(desiredTemporaryScaleMetricSpec apiv1.TemporaryScaleMetricSpec) *FakeMetricsJobClient {
+func FakeNew(desiredConditionalReplicasSpec apiv1.ConditionalReplicasSpec) *FakeMetricsJobClient {
 	return &FakeMetricsJobClient{
-		desiredTemporaryScaleMetricSpec: desiredTemporaryScaleMetricSpec,
+		desiredConditionalReplicasSpec: desiredConditionalReplicasSpec,
 	}
 }
 
@@ -41,6 +41,6 @@ func (j *FakeMetricsJobClient) Start(ctx context.Context) {
 func (j *FakeMetricsJobClient) Stop() {
 }
 
-func (j *FakeMetricsJobClient) GetDesiredMinMaxReplicas() apiv1.TemporaryScaleMetricSpec {
-	return j.desiredTemporaryScaleMetricSpec
+func (j *FakeMetricsJobClient) GetDesiredMinMaxReplicas() apiv1.ConditionalReplicasSpec {
+	return j.desiredConditionalReplicasSpec
 }

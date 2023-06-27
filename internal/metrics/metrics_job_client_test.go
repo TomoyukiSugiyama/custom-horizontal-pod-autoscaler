@@ -34,7 +34,7 @@ import (
 var _ = Describe("MetricsJobClient", func() {
 	ctx := context.Background()
 
-	It("Should get desiredMinMaxremplicas", func() {
+	It("Should get desiredMinMaxReplicas", func() {
 		mt := metricType{
 			jobType:  "training",
 			duration: "7-21",
@@ -93,16 +93,20 @@ func newCustomHorizontalPodAutoscaler() *customautoscalingv1.CustomHorizontalPod
 	workdayMaxRelpicas := int32(4)
 	trainingMinRelpicas := int32(5)
 	trainingMaxRelpicas := int32(10)
-	temporaryScaleMetrics := []customautoscalingv1.TemporaryScaleMetricSpec{
+	conditionalReplicasSpecs := []customautoscalingv1.ConditionalReplicasSpec{
 		{
-			Type:        "workday",
-			Duration:    "7-21",
+			Condition: customautoscalingv1.Condition{
+				Type: "workday",
+				Id:   "7-21",
+			},
 			MinReplicas: &workdayMinRelpicas,
 			MaxReplicas: &workdayMaxRelpicas,
 		},
 		{
-			Type:        "training",
-			Duration:    "7-21",
+			Condition: customautoscalingv1.Condition{
+				Type: "training",
+				Id:   "7-21",
+			},
 			MinReplicas: &trainingMinRelpicas,
 			MaxReplicas: &trainingMaxRelpicas,
 		},
@@ -119,7 +123,7 @@ func newCustomHorizontalPodAutoscaler() *customautoscalingv1.CustomHorizontalPod
 			MaxReplicas:                 maxReplicas,
 			ScaleTargetRef:              scaleTargetRef,
 			Metrics:                     metrics,
-			TemporaryScaleMetrics:       temporaryScaleMetrics,
+			ConditionalReplicasSpecs:    conditionalReplicasSpecs,
 		},
 	}
 }
