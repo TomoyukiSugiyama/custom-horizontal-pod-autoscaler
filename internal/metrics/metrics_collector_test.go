@@ -29,7 +29,7 @@ import (
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 )
 
-var _ = Describe("MetricsJobClient", func() {
+var _ = Describe("Syncer", func() {
 	ctx := context.Background()
 
 	It("Should get persedQueryResult", func() {

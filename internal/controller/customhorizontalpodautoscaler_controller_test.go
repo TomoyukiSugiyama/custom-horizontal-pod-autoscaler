@@ -93,9 +93,9 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 			MinReplicas: pointer.Int32(1),
 			MaxReplicas: pointer.Int32(5),
 		}
-		fakeMetricsJobClient := syncerpkg.FakeNew(desiredSpec)
+		fakeSyncer := syncerpkg.FakeNew(desiredSpec)
 		namespacedName := types.NamespacedName{Namespace: "dummy-namespace", Name: "test-customhpa"}
-		fakeMetricsJobClients := map[types.NamespacedName]syncerpkg.MetricsJobClient{namespacedName: fakeMetricsJobClient}
+		fakeSyncers := map[types.NamespacedName]syncerpkg.Syncer{namespacedName: fakeSyncer}
 
 		client, err := prometheusapi.NewClient(prometheusapi.Config{Address: "http://localhost:9090"})
 		Expect(err).NotTo(HaveOccurred())
@@ -106,7 +106,7 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 
 		go collector.Start(ctx)
 
-		reconciler := NewReconcile(k8sClient, scheme.Scheme, collector, WithMetricsJobClients(fakeMetricsJobClients))
+		reconciler := NewReconcile(k8sClient, scheme.Scheme, collector, WithSyncers(fakeSyncers))
 
 		err = reconciler.SetupWithManager(mgr)
 		Expect(err).NotTo(HaveOccurred())

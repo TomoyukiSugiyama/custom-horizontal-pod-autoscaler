@@ -29,13 +29,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-type MetricsJobClient interface {
+type Syncer interface {
 	Start(ctx context.Context)
 	Stop()
 	GetDesiredMinMaxReplicas() apiv1.ConditionalReplicasSpec
 }
 
-type metricsJobClient struct {
+type syncer struct {
 	metricsCollector               metrics.MetricsCollector
 	ctrlClient                     ctrlClient.Client
 	interval                       time.Duration
@@ -44,12 +44,12 @@ type metricsJobClient struct {
 	namespacedName                 types.NamespacedName
 }
 
-var _ MetricsJobClient = (*metricsJobClient)(nil)
+var _ Syncer = (*syncer)(nil)
 
-type Option func(*metricsJobClient)
+type Option func(*syncer)
 
-func New(metricsCollector metrics.MetricsCollector, ctrlClient ctrlClient.Client, namespacedName types.NamespacedName, opts ...Option) (MetricsJobClient, error) {
-	j := &metricsJobClient{
+func New(metricsCollector metrics.MetricsCollector, ctrlClient ctrlClient.Client, namespacedName types.NamespacedName, opts ...Option) (Syncer, error) {
+	j := &syncer{
 		interval:                       30 * time.Second,
 		stopCh:                         make(chan struct{}),
 		metricsCollector:               metricsCollector,
@@ -65,13 +65,13 @@ func New(metricsCollector metrics.MetricsCollector, ctrlClient ctrlClient.Client
 	return j, nil
 }
 
-func WithMetricsJobClientsInterval(interval time.Duration) Option {
-	return func(j *metricsJobClient) {
+func WithSyncersInterval(interval time.Duration) Option {
+	return func(j *syncer) {
 		j.interval = interval
 	}
 }
 
-func (j *metricsJobClient) getConditionalReplicasTarget(ctx context.Context) {
+func (j *syncer) getConditionalReplicasTarget(ctx context.Context) {
 	logger := log.FromContext(ctx)
 	var current customautoscalingv1.CustomHorizontalPodAutoscaler
 	j.ctrlClient.Get(ctx, j.namespacedName, &current)
@@ -94,7 +94,7 @@ func (j *metricsJobClient) getConditionalReplicasTarget(ctx context.Context) {
 	)
 }
 
-func (j *metricsJobClient) updateDesiredMinMaxReplicas(ctx context.Context) {
+func (j *syncer) updateDesiredMinMaxReplicas(ctx context.Context) {
 	var current customautoscalingv1.CustomHorizontalPodAutoscaler
 	j.ctrlClient.Get(ctx, j.namespacedName, &current)
 
@@ -121,7 +121,7 @@ func (j *metricsJobClient) updateDesiredMinMaxReplicas(ctx context.Context) {
 	}
 }
 
-func (j *metricsJobClient) updateStatus(ctx context.Context) error {
+func (j *syncer) updateStatus(ctx context.Context) error {
 	var current customautoscalingv1.CustomHorizontalPodAutoscaler
 	j.ctrlClient.Get(ctx, j.namespacedName, &current)
 	current.Status.DesiredMinReplicas = *j.desiredConditionalReplicasSpec.MinReplicas
@@ -129,11 +129,11 @@ func (j *metricsJobClient) updateStatus(ctx context.Context) error {
 	return j.ctrlClient.Status().Update(ctx, &current)
 }
 
-func (j *metricsJobClient) GetDesiredMinMaxReplicas() apiv1.ConditionalReplicasSpec {
+func (j *syncer) GetDesiredMinMaxReplicas() apiv1.ConditionalReplicasSpec {
 	return j.desiredConditionalReplicasSpec
 }
 
-func (j *metricsJobClient) Start(ctx context.Context) {
+func (j *syncer) Start(ctx context.Context) {
 	logger := log.FromContext(ctx)
 	logger.Info("starting job")
 	defer logger.Info("shut down job")
@@ -157,6 +157,6 @@ func (j *metricsJobClient) Start(ctx context.Context) {
 	}
 }
 
-func (j *metricsJobClient) Stop() {
+func (j *syncer) Stop() {
 	close(j.stopCh)
 }

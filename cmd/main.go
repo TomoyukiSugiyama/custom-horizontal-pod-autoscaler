@@ -63,7 +63,7 @@ func main() {
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 	metricsCollectorInterval := flag.Duration("metrics-collector-interval", 30*time.Second, "Interval for metricsCollector.")
-	metricsJobClientsInterval := flag.Duration("metrics-job-clients-interval", 30*time.Second, "Interval for metricsJobClients.")
+	syncersInterval := flag.Duration("metrics-job-clients-interval", 30*time.Second, "Interval for syncers.")
 	flag.StringVar(&prometheusAddr, "prometheus-address", "localhost", "Address of prometheus.")
 	flag.StringVar(&prometheusPort, "prometheus-port", "9090", "Port number of prometheus.")
 	opts := zap.Options{
@@ -122,7 +122,7 @@ func main() {
 		mgr.GetClient(),
 		mgr.GetScheme(),
 		collector,
-		controller.WithMetricsJobClientsInterval(*metricsJobClientsInterval),
+		controller.WithSyncersInterval(*syncersInterval),
 	)
 
 	if err = controller.SetupWithManager(mgr); err != nil {

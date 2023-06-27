@@ -22,25 +22,25 @@ import (
 	apiv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
 )
 
-type FakeMetricsJobClient struct {
+type FakeSyncer struct {
 	desiredConditionalReplicasSpec apiv1.ConditionalReplicasSpec
 }
 
-// Guarantee *FakeMetricsJobClient implements JobClient.
-var _ MetricsJobClient = (*FakeMetricsJobClient)(nil)
+// Guarantee *FakeSyncer implements Syncer.
+var _ Syncer = (*FakeSyncer)(nil)
 
-func FakeNew(desiredConditionalReplicasSpec apiv1.ConditionalReplicasSpec) *FakeMetricsJobClient {
-	return &FakeMetricsJobClient{
+func FakeNew(desiredConditionalReplicasSpec apiv1.ConditionalReplicasSpec) *FakeSyncer {
+	return &FakeSyncer{
 		desiredConditionalReplicasSpec: desiredConditionalReplicasSpec,
 	}
 }
 
-func (j *FakeMetricsJobClient) Start(ctx context.Context) {
+func (j *FakeSyncer) Start(ctx context.Context) {
 }
 
-func (j *FakeMetricsJobClient) Stop() {
+func (j *FakeSyncer) Stop() {
 }
 
-func (j *FakeMetricsJobClient) GetDesiredMinMaxReplicas() apiv1.ConditionalReplicasSpec {
+func (j *FakeSyncer) GetDesiredMinMaxReplicas() apiv1.ConditionalReplicasSpec {
 	return j.desiredConditionalReplicasSpec
 }
