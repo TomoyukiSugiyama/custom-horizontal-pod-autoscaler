@@ -27,9 +27,10 @@ import (
 	. "github.com/onsi/gomega"
 	prometheusapi "github.com/prometheus/client_golang/api"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
 )
 
-var _ = Describe("MetricsJobClient", func() {
+var _ = Describe("Syncer", func() {
 	ctx := context.Background()
 
 	It("Should get persedQueryResult", func() {
@@ -47,7 +48,7 @@ var _ = Describe("MetricsJobClient", func() {
 		time.Sleep(100 * time.Millisecond)
 
 		res := collector.GetPersedQueryResult()
-		Expect(res[metricType{duration: "7-21", jobType: "training"}]).Should(Equal("1"))
+		Expect(res[customautoscalingv1.Condition{Id: "7-21", Type: "training"}]).Should(Equal("1"))
 
 	})
 
@@ -66,7 +67,7 @@ func NewFakePrometheusServer() *httptest.Server {
 		Job         string `json:"job"`
 		Instance    string `json:"instance"`
 		ExportedJob string `json:"exported_job"`
-		Duration    string `json:"duration"`
+		Id          string `json:"id"`
 		Type        string `json:"type"`
 	}
 
@@ -96,7 +97,7 @@ func NewFakePrometheusServer() *httptest.Server {
 						Job:         "prometheus",
 						Instance:    "localhost:9090",
 						ExportedJob: "temporary_scale_job_7-21_training",
-						Duration:    "7-21",
+						Id:          "7-21",
 						Type:        "training",
 					},
 					Value: []byte(`[1435781451.781,"1"]`),

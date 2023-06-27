@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package metrics
+package syncer
 
 import (
 	"context"
@@ -28,28 +28,29 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
 	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
+	"sample.com/custom-horizontal-pod-autoscaler/internal/metrics"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = Describe("MetricsJobClient", func() {
+var _ = Describe("Syncer", func() {
 	ctx := context.Background()
 
 	It("Should get desiredMinMaxReplicas", func() {
-		mt := metricType{
-			jobType:  "training",
-			duration: "7-21",
+		mt := customautoscalingv1.Condition{
+			Type: "training",
+			Id:   "7-21",
 		}
-		persedQueryResults := map[metricType]string{mt: "1"}
-		metricsCollector := FakeNewCollector(persedQueryResults)
+		persedQueryResults := map[customautoscalingv1.Condition]string{mt: "1"}
+		metricsCollector := metrics.FakeNewCollector(persedQueryResults)
 		namespacedName := types.NamespacedName{Namespace: "dummy-namespace", Name: "test-customhpa"}
-		metricsJobClient, err := New(metricsCollector, k8sClient, namespacedName, WithMetricsJobClientsInterval(10*time.Millisecond))
+		syncer, err := New(metricsCollector, k8sClient, namespacedName, WithSyncersInterval(10*time.Millisecond))
 		Expect(err).NotTo(HaveOccurred())
-		go metricsJobClient.Start(ctx)
+		go syncer.Start(ctx)
 		time.Sleep(20 * time.Millisecond)
-		desiredMinMaxremplicas := metricsJobClient.GetDesiredMinMaxReplicas()
+		desiredMinMaxremplicas := syncer.GetDesiredMinMaxReplicas()
 		Expect(desiredMinMaxremplicas.MinReplicas).Should(Equal(pointer.Int32Ptr(5)))
 		Expect(desiredMinMaxremplicas.MaxReplicas).Should(Equal(pointer.Int32(10)))
-		metricsJobClient.Stop()
+		syncer.Stop()
 	})
 
 	BeforeEach(func() {

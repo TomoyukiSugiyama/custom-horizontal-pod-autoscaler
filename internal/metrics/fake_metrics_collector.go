@@ -19,24 +19,26 @@ package metrics
 import (
 	"context"
 	"sync"
+
+	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
 )
 
 type FakeMetricsCollector struct {
 	stopCh             chan struct{}
-	persedQueryResults map[metricType]string
+	persedQueryResults map[customautoscalingv1.Condition]string
 	mu                 sync.RWMutex
 }
 
 // Guarantee *FakeMetricsCollector implements MetricsCollector.
 var _ MetricsCollector = (*FakeMetricsCollector)(nil)
 
-func FakeNewCollector(persedQueryResults map[metricType]string) *FakeMetricsCollector {
+func FakeNewCollector(persedQueryResults map[customautoscalingv1.Condition]string) *FakeMetricsCollector {
 	return &FakeMetricsCollector{
 		persedQueryResults: persedQueryResults,
 	}
 }
 
-func (c *FakeMetricsCollector) GetPersedQueryResult() map[metricType]string {
+func (c *FakeMetricsCollector) GetPersedQueryResult() map[customautoscalingv1.Condition]string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.persedQueryResults

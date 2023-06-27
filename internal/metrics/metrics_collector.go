@@ -24,14 +24,14 @@ import (
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/promql/parser"
-
+	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 type MetricsCollector interface {
 	Start(ctx context.Context)
 	Stop()
-	GetPersedQueryResult() map[metricType]string
+	GetPersedQueryResult() map[customautoscalingv1.Condition]string
 }
 
 type metricsCollector struct {
@@ -39,13 +39,8 @@ type metricsCollector struct {
 	interval           time.Duration
 	stopCh             chan struct{}
 	query              string
-	persedQueryResults map[metricType]string
+	persedQueryResults map[customautoscalingv1.Condition]string
 	mu                 sync.RWMutex
-}
-
-type metricType struct {
-	duration string
-	jobType  string
 }
 
 type CollectorOption func(*metricsCollector)
@@ -71,7 +66,7 @@ func WithMetricsCollectorInterval(interval time.Duration) CollectorOption {
 	}
 }
 
-func (c *metricsCollector) GetPersedQueryResult() map[metricType]string {
+func (c *metricsCollector) GetPersedQueryResult() map[customautoscalingv1.Condition]string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.persedQueryResults
@@ -95,8 +90,8 @@ func (c *metricsCollector) getTemporaryScaleMetrics(ctx context.Context) {
 	for key, queryResult := range c.persedQueryResults {
 		logger.Info(
 			"parsed query result",
-			"duration", key.duration,
-			"type", key.jobType,
+			"id", key.Id,
+			"type", key.Type,
 			"value", queryResult,
 		)
 	}
@@ -105,15 +100,15 @@ func (c *metricsCollector) getTemporaryScaleMetrics(ctx context.Context) {
 func (c *metricsCollector) perseMetrics(samples model.Vector) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.persedQueryResults = make(map[metricType]string)
+	c.persedQueryResults = make(map[customautoscalingv1.Condition]string)
 	for _, sample := range samples {
 		metrics, err := parser.ParseMetric(sample.Metric.String())
 		if err != nil {
 			return err
 		}
-		k := metricType{
-			jobType:  metrics.Map()["type"],
-			duration: metrics.Map()["duration"],
+		k := customautoscalingv1.Condition{
+			Type: metrics.Map()["type"],
+			Id:   metrics.Map()["id"],
 		}
 		c.persedQueryResults[k] = sample.Value.String()
 	}

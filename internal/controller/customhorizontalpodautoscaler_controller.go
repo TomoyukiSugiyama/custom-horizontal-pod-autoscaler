@@ -28,25 +28,24 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
-
 	autoscalingv2apply "k8s.io/client-go/applyconfigurations/autoscaling/v2"
+	"k8s.io/utils/pointer"
+	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
+	metricspkg "sample.com/custom-horizontal-pod-autoscaler/internal/metrics"
+	syncerpkg "sample.com/custom-horizontal-pod-autoscaler/internal/syncer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
-	metricspkg "sample.com/custom-horizontal-pod-autoscaler/internal/metrics"
 )
 
 // CustomHorizontalPodAutoscalerReconciler reconciles a CustomHorizontalPodAutoscaler object
 type CustomHorizontalPodAutoscalerReconciler struct {
 	client.Client
-	Scheme                    *runtime.Scheme
-	metricsCollector          metricspkg.MetricsCollector
-	metricsJobClients         map[types.NamespacedName]metricspkg.MetricsJobClient
-	metricsJobClientsInterval time.Duration
-	mu                        sync.RWMutex
+	Scheme           *runtime.Scheme
+	metricsCollector metricspkg.MetricsCollector
+	syncers          map[types.NamespacedName]syncerpkg.Syncer
+	syncersInterval  time.Duration
+	mu               sync.RWMutex
 }
 
 type Option func(*CustomHorizontalPodAutoscalerReconciler)
@@ -58,11 +57,11 @@ type Option func(*CustomHorizontalPodAutoscalerReconciler)
 func NewReconcile(Client client.Client, Scheme *runtime.Scheme, metricsCollector metricspkg.MetricsCollector, opts ...Option) *CustomHorizontalPodAutoscalerReconciler {
 
 	r := &CustomHorizontalPodAutoscalerReconciler{
-		Client:                    Client,
-		Scheme:                    Scheme,
-		metricsCollector:          metricsCollector,
-		metricsJobClients:         make(map[types.NamespacedName]metricspkg.MetricsJobClient),
-		metricsJobClientsInterval: 30 * time.Second,
+		Client:           Client,
+		Scheme:           Scheme,
+		metricsCollector: metricsCollector,
+		syncers:          make(map[types.NamespacedName]syncerpkg.Syncer),
+		syncersInterval:  30 * time.Second,
 	}
 
 	for _, opt := range opts {
@@ -72,15 +71,15 @@ func NewReconcile(Client client.Client, Scheme *runtime.Scheme, metricsCollector
 	return r
 }
 
-func WithMetricsJobClients(metricsJobClients map[types.NamespacedName]metricspkg.MetricsJobClient) Option {
+func WithSyncers(syncers map[types.NamespacedName]syncerpkg.Syncer) Option {
 	return func(r *CustomHorizontalPodAutoscalerReconciler) {
-		r.metricsJobClients = metricsJobClients
+		r.syncers = syncers
 	}
 }
 
-func WithMetricsJobClientsInterval(metricsJobClientsInterval time.Duration) Option {
+func WithSyncersInterval(syncersInterval time.Duration) Option {
 	return func(r *CustomHorizontalPodAutoscalerReconciler) {
-		r.metricsJobClientsInterval = metricsJobClientsInterval
+		r.syncersInterval = syncersInterval
 	}
 }
 
@@ -92,16 +91,16 @@ func WithMetricsJobClientsInterval(metricsJobClientsInterval time.Duration) Opti
 func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 	r.mu.RLock()
-	metricsJobClient, metricsJobClientExists := r.metricsJobClients[req.NamespacedName]
+	syncer, syncerExists := r.syncers[req.NamespacedName]
 	r.mu.RUnlock()
 
 	var customHPA customautoscalingv1.CustomHorizontalPodAutoscaler
 	err := r.Get(ctx, req.NamespacedName, &customHPA)
 	if errors.IsNotFound(err) {
-		if metricsJobClientExists {
-			metricsJobClient.Stop()
+		if syncerExists {
+			syncer.Stop()
 			r.mu.Lock()
-			delete(r.metricsJobClients, req.NamespacedName)
+			delete(r.syncers, req.NamespacedName)
 			r.mu.Unlock()
 		}
 		return ctrl.Result{}, nil
@@ -116,24 +115,24 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 		return ctrl.Result{}, nil
 	}
 
-	if !metricsJobClientExists {
-		metricsJobClient, err = metricspkg.New(
+	if !syncerExists {
+		syncer, err = syncerpkg.New(
 			r.metricsCollector,
 			r.Client,
 			req.NamespacedName,
-			metricspkg.WithMetricsJobClientsInterval(r.metricsJobClientsInterval),
+			syncerpkg.WithSyncersInterval(r.syncersInterval),
 		)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
-		go metricsJobClient.Start(ctx)
+		go syncer.Start(ctx)
 		r.mu.Lock()
-		r.metricsJobClients[req.NamespacedName] = metricsJobClient
+		r.syncers[req.NamespacedName] = syncer
 		r.mu.Unlock()
-		logger.Info("create metricsJobClient successfully")
+		logger.Info("create syncer successfully")
 	}
 
-	err = r.reconcileHorizontalPodAutoscaler(ctx, customHPA, metricsJobClient)
+	err = r.reconcileHorizontalPodAutoscaler(ctx, customHPA, syncer)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -145,12 +144,12 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscaler(
 	ctx context.Context,
 	customHPA customautoscalingv1.CustomHorizontalPodAutoscaler,
-	metricsJobClient metricspkg.MetricsJobClient,
+	syncer syncerpkg.Syncer,
 ) error {
 	logger := log.FromContext(ctx)
 	hpaName := customHPA.Spec.HorizontalPodAutoscalerName
 
-	desiredMinMaxReplicas := metricsJobClient.GetDesiredMinMaxReplicas()
+	desiredMinMaxReplicas := syncer.GetDesiredMinMaxReplicas()
 	minReplicas := customHPA.Spec.MinReplicas
 	if desiredMinMaxReplicas.MinReplicas != nil {
 		minReplicas = desiredMinMaxReplicas.MinReplicas
