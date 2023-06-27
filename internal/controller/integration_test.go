@@ -23,8 +23,8 @@ import (
 var _ = Describe("Integration test", func() {
 	ctx := context.Background()
 	var stopFunc func()
-
 	var fakePrometheus *httptest.Server
+
 	It("Should create HorizontalPodAutoscaler", func() {
 		customHorizontalPodAutoscaler := util.NewCustomHorizontalPodAutoscaler()
 		err := k8sClient.Create(ctx, customHorizontalPodAutoscaler)
