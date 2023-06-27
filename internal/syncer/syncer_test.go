@@ -44,11 +44,11 @@ var _ = Describe("Syncer", func() {
 		syncer, err := New(metricsCollector, k8sClient, namespacedName, WithSyncersInterval(10*time.Millisecond))
 		Expect(err).NotTo(HaveOccurred())
 		go syncer.Start(ctx)
+		defer syncer.Stop()
 		time.Sleep(20 * time.Millisecond)
 		desiredMinMaxremplicas := syncer.GetDesiredMinMaxReplicas()
 		Expect(desiredMinMaxremplicas.MinReplicas).Should(Equal(pointer.Int32Ptr(5)))
 		Expect(desiredMinMaxremplicas.MaxReplicas).Should(Equal(pointer.Int32(10)))
-		syncer.Stop()
 	})
 
 	BeforeEach(func() {

@@ -42,6 +42,7 @@ var _ = Describe("Syncer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		go collector.Start(ctx)
+		defer collector.Stop()
 		time.Sleep(100 * time.Millisecond)
 
 		res := collector.GetPersedQueryResult()
