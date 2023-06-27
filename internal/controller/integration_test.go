@@ -1,23 +1,8 @@
-/*
-Copyright 2023 Tomoyuki Sugiyama.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package controller
 
 import (
 	"context"
+	"net/http/httptest"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -26,26 +11,26 @@ import (
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/utils/pointer"
 	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
 	metricspkg "sample.com/custom-horizontal-pod-autoscaler/internal/metrics"
-	syncerpkg "sample.com/custom-horizontal-pod-autoscaler/internal/syncer"
 	"sample.com/custom-horizontal-pod-autoscaler/test/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
+var _ = Describe("Integration test", func() {
 	ctx := context.Background()
 	var stopFunc func()
+	var fakePrometheus *httptest.Server
+	var collector metricspkg.MetricsCollector
 
 	It("Should create HorizontalPodAutoscaler", func() {
 		customHorizontalPodAutoscaler := util.NewCustomHorizontalPodAutoscaler()
 		err := k8sClient.Create(ctx, customHorizontalPodAutoscaler)
 		Expect(err).NotTo(HaveOccurred())
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(20 * time.Millisecond)
 		hpa := autoscalingv2.HorizontalPodAutoscaler{}
 		Eventually(func() error {
 			return k8sClient.Get(ctx, client.ObjectKey{Namespace: "dummy-namespace", Name: "test-hpa"}, &hpa)
@@ -77,6 +62,46 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 		Expect(hpa.Spec.Metrics).Should(Equal(expectedMetrics))
 	})
 
+	It("Should exist HorizontalPodAutoscaler after delete", func() {
+		customHorizontalPodAutoscaler := util.NewCustomHorizontalPodAutoscaler()
+		err := k8sClient.Create(ctx, customHorizontalPodAutoscaler)
+		Expect(err).NotTo(HaveOccurred())
+		time.Sleep(100 * time.Millisecond)
+		hpa := autoscalingv2.HorizontalPodAutoscaler{}
+		Eventually(func() error {
+			return k8sClient.Get(ctx, client.ObjectKey{Namespace: "dummy-namespace", Name: "test-hpa"}, &hpa)
+		}).Should(Succeed())
+		time.Sleep(100 * time.Millisecond)
+		Eventually(func() error {
+			return k8sClient.Delete(ctx, &hpa)
+		}).Should(Succeed())
+		time.Sleep(100 * time.Millisecond)
+		Eventually(func() error {
+			return k8sClient.Get(ctx, client.ObjectKey{Namespace: "dummy-namespace", Name: "test-hpa"}, &hpa)
+		}).Should(Succeed())
+
+		Expect(hpa.Name).Should(Equal("test-hpa"))
+	})
+
+	It("Should not exist CustomHorizontalPodAutoscaler after delete", func() {
+		customHorizontalPodAutoscaler := util.NewCustomHorizontalPodAutoscaler()
+		err := k8sClient.Create(ctx, customHorizontalPodAutoscaler)
+		Expect(err).NotTo(HaveOccurred())
+		time.Sleep(100 * time.Millisecond)
+		customHPA := customHorizontalPodAutoscaler
+		Eventually(func() error {
+			return k8sClient.Get(ctx, client.ObjectKey{Namespace: "dummy-namespace", Name: "test-customhpa"}, customHPA)
+		}).Should(Succeed())
+		time.Sleep(100 * time.Millisecond)
+		Eventually(func() error {
+			return k8sClient.Delete(ctx, customHPA)
+		}).Should(Succeed())
+		time.Sleep(100 * time.Millisecond)
+		Eventually(func() error {
+			return k8sClient.Get(ctx, client.ObjectKey{Namespace: "dummy-namespace", Name: "test-customhpa"}, customHPA)
+		}).ShouldNot(Succeed())
+	})
+
 	BeforeEach(func() {
 		err := k8sClient.DeleteAllOf(ctx, &customautoscalingv1.CustomHorizontalPodAutoscaler{}, client.InNamespace("dummy-namespace"))
 		Expect(err).NotTo(HaveOccurred())
@@ -89,28 +114,23 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 		})
 		Expect(err).NotTo(HaveOccurred())
 
-		desiredSpec := customautoscalingv1.ConditionalReplicasSpec{
-			MinReplicas: pointer.Int32(1),
-			MaxReplicas: pointer.Int32(5),
-		}
-		fakeSyncer := syncerpkg.FakeNew(desiredSpec)
-		namespacedName := types.NamespacedName{Namespace: "dummy-namespace", Name: "test-customhpa"}
-		fakeSyncers := map[types.NamespacedName]syncerpkg.Syncer{namespacedName: fakeSyncer}
+		fakePrometheus = util.NewFakePrometheusServer()
 
-		client, err := prometheusapi.NewClient(prometheusapi.Config{Address: "http://localhost:9090"})
+		client, err := prometheusapi.NewClient(prometheusapi.Config{Address: fakePrometheus.URL})
 		Expect(err).NotTo(HaveOccurred())
-
 		api := prometheusv1.NewAPI(client)
-		dummyCollector, err := metricspkg.NewCollector(api)
+		collector, err = metricspkg.NewCollector(api, metricspkg.WithMetricsCollectorInterval(50*time.Millisecond))
 		Expect(err).NotTo(HaveOccurred())
 
-		reconciler := NewReconcile(k8sClient, scheme.Scheme, dummyCollector, WithSyncers(fakeSyncers))
+		go collector.Start(ctx)
+		time.Sleep(100 * time.Millisecond)
+
+		reconciler := NewReconcile(k8sClient, scheme.Scheme, collector, WithSyncersInterval(50*time.Millisecond))
 
 		err = reconciler.SetupWithManager(mgr)
 		Expect(err).NotTo(HaveOccurred())
 
 		ctx, cancel := context.WithCancel(ctx)
-
 		stopFunc = cancel
 		go func() {
 			err := mgr.Start(ctx)
@@ -119,10 +139,13 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 			}
 		}()
 		time.Sleep(100 * time.Millisecond)
+
 	})
 
 	AfterEach(func() {
 		stopFunc()
+		collector.Stop()
+		fakePrometheus.Close()
 		time.Sleep(100 * time.Millisecond)
 	})
 })
