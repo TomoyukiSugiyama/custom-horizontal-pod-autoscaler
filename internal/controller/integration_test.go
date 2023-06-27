@@ -83,6 +83,25 @@ var _ = Describe("Integration test", func() {
 		Expect(hpa.Name).Should(Equal("test-hpa"))
 	})
 
+	It("Should not exist CustomHorizontalPodAutoscaler after delete", func() {
+		customHorizontalPodAutoscaler := util.NewCustomHorizontalPodAutoscaler()
+		err := k8sClient.Create(ctx, customHorizontalPodAutoscaler)
+		Expect(err).NotTo(HaveOccurred())
+		time.Sleep(100 * time.Millisecond)
+		customHPA := customHorizontalPodAutoscaler
+		Eventually(func() error {
+			return k8sClient.Get(ctx, client.ObjectKey{Namespace: "dummy-namespace", Name: "test-customhpa"}, customHPA)
+		}).Should(Succeed())
+		time.Sleep(100 * time.Millisecond)
+		Eventually(func() error {
+			return k8sClient.Delete(ctx, customHPA)
+		}).Should(Succeed())
+		time.Sleep(100 * time.Millisecond)
+		Eventually(func() error {
+			return k8sClient.Get(ctx, client.ObjectKey{Namespace: "dummy-namespace", Name: "test-customhpa"}, customHPA)
+		}).ShouldNot(Succeed())
+	})
+
 	BeforeEach(func() {
 		err := k8sClient.DeleteAllOf(ctx, &customautoscalingv1.CustomHorizontalPodAutoscaler{}, client.InNamespace("dummy-namespace"))
 		Expect(err).NotTo(HaveOccurred())
