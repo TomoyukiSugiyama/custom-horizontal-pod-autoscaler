@@ -43,8 +43,8 @@ type metricsCollector struct {
 }
 
 type MetricType struct {
-	Id      string
-	JobType string
+	Id   string
+	Type string
 }
 
 type CollectorOption func(*metricsCollector)
@@ -95,7 +95,7 @@ func (c *metricsCollector) getTemporaryScaleMetrics(ctx context.Context) {
 		logger.Info(
 			"parsed query result",
 			"id", key.Id,
-			"type", key.JobType,
+			"type", key.Type,
 			"value", queryResult,
 		)
 	}
@@ -111,8 +111,8 @@ func (c *metricsCollector) perseMetrics(samples model.Vector) error {
 			return err
 		}
 		k := MetricType{
-			JobType: metrics.Map()["type"],
-			Id:      metrics.Map()["id"],
+			Type: metrics.Map()["type"],
+			Id:   metrics.Map()["id"],
 		}
 		c.persedQueryResults[k] = sample.Value.String()
 	}

@@ -47,7 +47,7 @@ var _ = Describe("Syncer", func() {
 		time.Sleep(100 * time.Millisecond)
 
 		res := collector.GetPersedQueryResult()
-		Expect(res[MetricType{Id: "7-21", JobType: "training"}]).Should(Equal("1"))
+		Expect(res[MetricType{Id: "7-21", Type: "training"}]).Should(Equal("1"))
 
 	})
 
