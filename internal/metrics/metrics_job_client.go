@@ -31,16 +31,16 @@ import (
 type MetricsJobClient interface {
 	Start(ctx context.Context)
 	Stop()
-	GetDesiredMinMaxReplicas() apiv1.ConditionalReplicasTargetSpec
+	GetDesiredMinMaxReplicas() apiv1.ConditionalReplicasSpec
 }
 
 type metricsJobClient struct {
-	metricsCollector                 MetricsCollector
-	ctrlClient                       ctrlClient.Client
-	interval                         time.Duration
-	stopCh                           chan struct{}
-	desiredConditionalReplicasTarget apiv1.ConditionalReplicasTargetSpec
-	namespacedName                   types.NamespacedName
+	metricsCollector               MetricsCollector
+	ctrlClient                     ctrlClient.Client
+	interval                       time.Duration
+	stopCh                         chan struct{}
+	desiredConditionalReplicasSpec apiv1.ConditionalReplicasSpec
+	namespacedName                 types.NamespacedName
 }
 
 var _ MetricsJobClient = (*metricsJobClient)(nil)
@@ -49,12 +49,12 @@ type Option func(*metricsJobClient)
 
 func New(metricsCollector MetricsCollector, ctrlClient ctrlClient.Client, namespacedName types.NamespacedName, opts ...Option) (MetricsJobClient, error) {
 	j := &metricsJobClient{
-		interval:                         30 * time.Second,
-		stopCh:                           make(chan struct{}),
-		metricsCollector:                 metricsCollector,
-		ctrlClient:                       ctrlClient,
-		namespacedName:                   namespacedName,
-		desiredConditionalReplicasTarget: apiv1.ConditionalReplicasTargetSpec{},
+		interval:                       30 * time.Second,
+		stopCh:                         make(chan struct{}),
+		metricsCollector:               metricsCollector,
+		ctrlClient:                     ctrlClient,
+		namespacedName:                 namespacedName,
+		desiredConditionalReplicasSpec: apiv1.ConditionalReplicasSpec{},
 	}
 
 	for _, opt := range opts {
@@ -76,7 +76,7 @@ func (j *metricsJobClient) getConditionalReplicasTarget(ctx context.Context) {
 	j.ctrlClient.Get(ctx, j.namespacedName, &current)
 	j.updateDesiredMinMaxReplicas(ctx)
 
-	for _, target := range current.Spec.ConditionalReplicasTargets {
+	for _, target := range current.Spec.ConditionalReplicasSpecs {
 		logger.Info(
 			"customHPA settings",
 			"id", target.Condition.Id,
@@ -88,8 +88,8 @@ func (j *metricsJobClient) getConditionalReplicasTarget(ctx context.Context) {
 
 	logger.Info(
 		"update desired min and max replicas",
-		"minReplicas", j.desiredConditionalReplicasTarget.MinReplicas,
-		"maxReplicas", j.desiredConditionalReplicasTarget.MaxReplicas,
+		"minReplicas", j.desiredConditionalReplicasSpec.MinReplicas,
+		"maxReplicas", j.desiredConditionalReplicasSpec.MaxReplicas,
 	)
 }
 
@@ -97,25 +97,25 @@ func (j *metricsJobClient) updateDesiredMinMaxReplicas(ctx context.Context) {
 	var current customautoscalingv1.CustomHorizontalPodAutoscaler
 	j.ctrlClient.Get(ctx, j.namespacedName, &current)
 
-	j.desiredConditionalReplicasTarget.MinReplicas = pointer.Int32(1)
+	j.desiredConditionalReplicasSpec.MinReplicas = pointer.Int32(1)
 	if current.Spec.MinReplicas != nil {
-		j.desiredConditionalReplicasTarget.MinReplicas = current.Spec.MinReplicas
+		j.desiredConditionalReplicasSpec.MinReplicas = current.Spec.MinReplicas
 	}
-	j.desiredConditionalReplicasTarget.MaxReplicas = &current.Spec.MaxReplicas
+	j.desiredConditionalReplicasSpec.MaxReplicas = &current.Spec.MaxReplicas
 
-	for _, target := range current.Spec.ConditionalReplicasTargets {
+	for _, target := range current.Spec.ConditionalReplicasSpecs {
 		k := metricType{
 			jobType:  target.Condition.Type,
 			duration: target.Condition.Id,
 		}
 		res := j.metricsCollector.GetPersedQueryResult()
 		v, isExist := res[k]
-		if isExist && v == "1" && *j.desiredConditionalReplicasTarget.MaxReplicas <= *target.MaxReplicas {
-			j.desiredConditionalReplicasTarget.MinReplicas = pointer.Int32(1)
+		if isExist && v == "1" && *j.desiredConditionalReplicasSpec.MaxReplicas <= *target.MaxReplicas {
+			j.desiredConditionalReplicasSpec.MinReplicas = pointer.Int32(1)
 			if target.MinReplicas != nil {
-				j.desiredConditionalReplicasTarget.MinReplicas = target.MinReplicas
+				j.desiredConditionalReplicasSpec.MinReplicas = target.MinReplicas
 			}
-			j.desiredConditionalReplicasTarget.MaxReplicas = target.MaxReplicas
+			j.desiredConditionalReplicasSpec.MaxReplicas = target.MaxReplicas
 		}
 	}
 }
@@ -123,13 +123,13 @@ func (j *metricsJobClient) updateDesiredMinMaxReplicas(ctx context.Context) {
 func (j *metricsJobClient) updateStatus(ctx context.Context) error {
 	var current customautoscalingv1.CustomHorizontalPodAutoscaler
 	j.ctrlClient.Get(ctx, j.namespacedName, &current)
-	current.Status.DesiredMinReplicas = *j.desiredConditionalReplicasTarget.MinReplicas
-	current.Status.DesiredMaxReplicas = *j.desiredConditionalReplicasTarget.MaxReplicas
+	current.Status.DesiredMinReplicas = *j.desiredConditionalReplicasSpec.MinReplicas
+	current.Status.DesiredMaxReplicas = *j.desiredConditionalReplicasSpec.MaxReplicas
 	return j.ctrlClient.Status().Update(ctx, &current)
 }
 
-func (j *metricsJobClient) GetDesiredMinMaxReplicas() apiv1.ConditionalReplicasTargetSpec {
-	return j.desiredConditionalReplicasTarget
+func (j *metricsJobClient) GetDesiredMinMaxReplicas() apiv1.ConditionalReplicasSpec {
+	return j.desiredConditionalReplicasSpec
 }
 
 func (j *metricsJobClient) Start(ctx context.Context) {

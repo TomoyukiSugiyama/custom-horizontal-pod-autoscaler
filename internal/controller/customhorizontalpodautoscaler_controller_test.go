@@ -91,7 +91,7 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 		})
 		Expect(err).NotTo(HaveOccurred())
 
-		desiredSpec := apiv1.ConditionalReplicasTargetSpec{
+		desiredSpec := apiv1.ConditionalReplicasSpec{
 			MinReplicas: pointer.Int32(1),
 			MaxReplicas: pointer.Int32(5),
 		}
@@ -156,7 +156,7 @@ func newCustomHorizontalPodAutoscaler() *customautoscalingv1.CustomHorizontalPod
 	workdayMaxRelpicas := int32(4)
 	trainingMinRelpicas := int32(5)
 	trainingMaxRelpicas := int32(10)
-	conditionalReplicasTargets := []customautoscalingv1.ConditionalReplicasTargetSpec{
+	conditionalReplicasSpecs := []customautoscalingv1.ConditionalReplicasSpec{
 		{
 			Condition: customautoscalingv1.Condition{
 				Type: "workday",
@@ -186,7 +186,7 @@ func newCustomHorizontalPodAutoscaler() *customautoscalingv1.CustomHorizontalPod
 			MaxReplicas:                 maxReplicas,
 			ScaleTargetRef:              scaleTargetRef,
 			Metrics:                     metrics,
-			ConditionalReplicasTargets:  conditionalReplicasTargets,
+			ConditionalReplicasSpecs:    conditionalReplicasSpecs,
 		},
 	}
 }

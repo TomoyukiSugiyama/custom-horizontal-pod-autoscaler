@@ -93,7 +93,7 @@ func newCustomHorizontalPodAutoscaler() *customautoscalingv1.CustomHorizontalPod
 	workdayMaxRelpicas := int32(4)
 	trainingMinRelpicas := int32(5)
 	trainingMaxRelpicas := int32(10)
-	conditionalReplicasTargets := []customautoscalingv1.ConditionalReplicasTargetSpec{
+	conditionalReplicasSpecs := []customautoscalingv1.ConditionalReplicasSpec{
 		{
 			Condition: customautoscalingv1.Condition{
 				Type: "workday",
@@ -123,7 +123,7 @@ func newCustomHorizontalPodAutoscaler() *customautoscalingv1.CustomHorizontalPod
 			MaxReplicas:                 maxReplicas,
 			ScaleTargetRef:              scaleTargetRef,
 			Metrics:                     metrics,
-			ConditionalReplicasTargets:  conditionalReplicasTargets,
+			ConditionalReplicasSpecs:    conditionalReplicasSpecs,
 		},
 	}
 }
