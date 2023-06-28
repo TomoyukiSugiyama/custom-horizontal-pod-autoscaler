@@ -13,7 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/utils/pointer"
-	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
+	customautoscalingv1alpha1 "sample.com/custom-horizontal-pod-autoscaler/api/v1alpha1"
 	metricspkg "sample.com/custom-horizontal-pod-autoscaler/internal/metrics"
 	"sample.com/custom-horizontal-pod-autoscaler/test/util"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -103,7 +103,7 @@ var _ = Describe("Integration test", func() {
 	})
 
 	BeforeEach(func() {
-		err := k8sClient.DeleteAllOf(ctx, &customautoscalingv1.CustomHorizontalPodAutoscaler{}, client.InNamespace("dummy-namespace"))
+		err := k8sClient.DeleteAllOf(ctx, &customautoscalingv1alpha1.CustomHorizontalPodAutoscaler{}, client.InNamespace("dummy-namespace"))
 		Expect(err).NotTo(HaveOccurred())
 
 		time.Sleep(100 * time.Millisecond)

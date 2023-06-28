@@ -24,14 +24,14 @@ import (
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/promql/parser"
-	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
+	customautoscalingv1alpha1 "sample.com/custom-horizontal-pod-autoscaler/api/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 type MetricsCollector interface {
 	Start(ctx context.Context)
 	Stop()
-	GetPersedQueryResult() map[customautoscalingv1.Condition]string
+	GetPersedQueryResult() map[customautoscalingv1alpha1.Condition]string
 }
 
 type metricsCollector struct {
@@ -39,7 +39,7 @@ type metricsCollector struct {
 	interval           time.Duration
 	stopCh             chan struct{}
 	query              string
-	persedQueryResults map[customautoscalingv1.Condition]string
+	persedQueryResults map[customautoscalingv1alpha1.Condition]string
 	mu                 sync.RWMutex
 }
 
@@ -66,7 +66,7 @@ func WithMetricsCollectorInterval(interval time.Duration) CollectorOption {
 	}
 }
 
-func (c *metricsCollector) GetPersedQueryResult() map[customautoscalingv1.Condition]string {
+func (c *metricsCollector) GetPersedQueryResult() map[customautoscalingv1alpha1.Condition]string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.persedQueryResults
@@ -100,13 +100,13 @@ func (c *metricsCollector) getTemporaryScaleMetrics(ctx context.Context) {
 func (c *metricsCollector) perseMetrics(samples model.Vector) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.persedQueryResults = make(map[customautoscalingv1.Condition]string)
+	c.persedQueryResults = make(map[customautoscalingv1alpha1.Condition]string)
 	for _, sample := range samples {
 		metrics, err := parser.ParseMetric(sample.Metric.String())
 		if err != nil {
 			return err
 		}
-		k := customautoscalingv1.Condition{
+		k := customautoscalingv1alpha1.Condition{
 			Type: metrics.Map()["type"],
 			Id:   metrics.Map()["id"],
 		}

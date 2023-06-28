@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/utils/pointer"
-	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
+	customautoscalingv1alpha1 "sample.com/custom-horizontal-pod-autoscaler/api/v1alpha1"
 	metricspkg "sample.com/custom-horizontal-pod-autoscaler/internal/metrics"
 	syncerpkg "sample.com/custom-horizontal-pod-autoscaler/internal/syncer"
 	"sample.com/custom-horizontal-pod-autoscaler/test/util"
@@ -78,7 +78,7 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 	})
 
 	BeforeEach(func() {
-		err := k8sClient.DeleteAllOf(ctx, &customautoscalingv1.CustomHorizontalPodAutoscaler{}, client.InNamespace("dummy-namespace"))
+		err := k8sClient.DeleteAllOf(ctx, &customautoscalingv1alpha1.CustomHorizontalPodAutoscaler{}, client.InNamespace("dummy-namespace"))
 		Expect(err).NotTo(HaveOccurred())
 
 		time.Sleep(100 * time.Millisecond)
@@ -89,7 +89,7 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 		})
 		Expect(err).NotTo(HaveOccurred())
 
-		desiredSpec := customautoscalingv1.ConditionalReplicasSpec{
+		desiredSpec := customautoscalingv1alpha1.ConditionalReplicasSpec{
 			MinReplicas: pointer.Int32(1),
 			MaxReplicas: pointer.Int32(5),
 		}

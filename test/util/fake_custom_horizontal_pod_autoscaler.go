@@ -4,10 +4,10 @@ import (
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
+	customautoscalingv1alpha1 "sample.com/custom-horizontal-pod-autoscaler/api/v1alpha1"
 )
 
-func NewCustomHorizontalPodAutoscaler() *customautoscalingv1.CustomHorizontalPodAutoscaler {
+func NewCustomHorizontalPodAutoscaler() *customautoscalingv1alpha1.CustomHorizontalPodAutoscaler {
 	minReplicas := int32(1)
 	maxReplicas := int32(5)
 	scaleTargetRef := autoscalingv2.CrossVersionObjectReference{
@@ -33,9 +33,9 @@ func NewCustomHorizontalPodAutoscaler() *customautoscalingv1.CustomHorizontalPod
 	workdayMaxRelpicas := int32(4)
 	trainingMinRelpicas := int32(5)
 	trainingMaxRelpicas := int32(10)
-	conditionalReplicasSpecs := []customautoscalingv1.ConditionalReplicasSpec{
+	conditionalReplicasSpecs := []customautoscalingv1alpha1.ConditionalReplicasSpec{
 		{
-			Condition: customautoscalingv1.Condition{
+			Condition: customautoscalingv1alpha1.Condition{
 				Type: "workday",
 				Id:   "7-21",
 			},
@@ -43,7 +43,7 @@ func NewCustomHorizontalPodAutoscaler() *customautoscalingv1.CustomHorizontalPod
 			MaxReplicas: &workdayMaxRelpicas,
 		},
 		{
-			Condition: customautoscalingv1.Condition{
+			Condition: customautoscalingv1alpha1.Condition{
 				Type: "training",
 				Id:   "7-21",
 			},
@@ -52,12 +52,12 @@ func NewCustomHorizontalPodAutoscaler() *customautoscalingv1.CustomHorizontalPod
 		},
 	}
 
-	return &customautoscalingv1.CustomHorizontalPodAutoscaler{
+	return &customautoscalingv1alpha1.CustomHorizontalPodAutoscaler{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-customhpa",
 			Namespace: "dummy-namespace",
 		},
-		Spec: customautoscalingv1.CustomHorizontalPodAutoscalerSpec{
+		Spec: customautoscalingv1alpha1.CustomHorizontalPodAutoscalerSpec{
 			HorizontalPodAutoscalerName: "test-hpa",
 			MinReplicas:                 &minReplicas,
 			MaxReplicas:                 maxReplicas,
