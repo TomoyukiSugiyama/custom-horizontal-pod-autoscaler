@@ -1,4 +1,4 @@
-apiVersion: custom-autoscaling.sample.com/v1
+apiVersion: custom-autoscaling.sample.com/v1alpha1
 kind: CustomHorizontalPodAutoscaler
 metadata:
   labels:

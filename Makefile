@@ -61,7 +61,7 @@ test: manifests generate fmt vet envtest ## Run tests.
 	rm cover.out.tmp
 
 .PHONY: cover
-cover: test
+cover: test  ## Check coverage.
 	go tool cover -html=cover.out
 ##@ Build
 

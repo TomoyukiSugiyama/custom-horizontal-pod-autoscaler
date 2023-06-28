@@ -30,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	autoscalingv2apply "k8s.io/client-go/applyconfigurations/autoscaling/v2"
 	"k8s.io/utils/pointer"
-	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
+	customautoscalingv1alpha1 "sample.com/custom-horizontal-pod-autoscaler/api/v1alpha1"
 	metricspkg "sample.com/custom-horizontal-pod-autoscaler/internal/metrics"
 	syncerpkg "sample.com/custom-horizontal-pod-autoscaler/internal/syncer"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -94,7 +94,7 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 	syncer, syncerExists := r.syncers[req.NamespacedName]
 	r.mu.RUnlock()
 
-	var customHPA customautoscalingv1.CustomHorizontalPodAutoscaler
+	var customHPA customautoscalingv1alpha1.CustomHorizontalPodAutoscaler
 	err := r.Get(ctx, req.NamespacedName, &customHPA)
 	if errors.IsNotFound(err) {
 		if syncerExists {
@@ -143,7 +143,7 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 // reconcileHorizontalPodAutoscaler is a reconcile function for horizontal pod autoscaling
 func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscaler(
 	ctx context.Context,
-	customHPA customautoscalingv1.CustomHorizontalPodAutoscaler,
+	customHPA customautoscalingv1alpha1.CustomHorizontalPodAutoscaler,
 	syncer syncerpkg.Syncer,
 ) error {
 	logger := log.FromContext(ctx)
@@ -169,7 +169,7 @@ func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscal
 			Name:      hpaName,
 			Namespace: customHPA.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(&customHPA, customautoscalingv1.SchemeBuilder.GroupVersion.WithKind("CustomHorizontalPodAutoscaler")),
+				*metav1.NewControllerRef(&customHPA, customautoscalingv1alpha1.SchemeBuilder.GroupVersion.WithKind("CustomHorizontalPodAutoscaler")),
 			},
 		},
 		Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
@@ -221,9 +221,9 @@ func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscal
 
 func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(
 	ctx context.Context,
-	customHPA customautoscalingv1.CustomHorizontalPodAutoscaler,
+	customHPA customautoscalingv1alpha1.CustomHorizontalPodAutoscaler,
 ) (ctrl.Result, error) {
-	var currendCustomHPA customautoscalingv1.CustomHorizontalPodAutoscaler
+	var currendCustomHPA customautoscalingv1alpha1.CustomHorizontalPodAutoscaler
 	err := r.Get(ctx, client.ObjectKey{Namespace: customHPA.Namespace, Name: customHPA.Name}, &currendCustomHPA)
 	if err != nil {
 		return ctrl.Result{}, err
@@ -234,7 +234,7 @@ func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(
 		return ctrl.Result{}, err
 	}
 
-	currendCustomHPA.Status = customautoscalingv1.CustomHorizontalPodAutoscalerStatus{
+	currendCustomHPA.Status = customautoscalingv1alpha1.CustomHorizontalPodAutoscalerStatus{
 		CurrentReplicas:    currentHPA.Status.CurrentReplicas,
 		DesiredReplicas:    currentHPA.Status.DesiredReplicas,
 		CurrentMinReplicas: *currentHPA.Spec.MinReplicas,
@@ -269,7 +269,7 @@ func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(
 // SetupWithManager sets up the controller with the Manager.
 func (r *CustomHorizontalPodAutoscalerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&customautoscalingv1.CustomHorizontalPodAutoscaler{}).
+		For(&customautoscalingv1alpha1.CustomHorizontalPodAutoscaler{}).
 		Owns(&autoscalingv2.HorizontalPodAutoscaler{}).
 		Complete(r)
 }

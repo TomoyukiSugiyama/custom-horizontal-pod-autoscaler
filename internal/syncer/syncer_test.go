@@ -24,7 +24,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
-	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
+	customautoscalingv1alpha1 "sample.com/custom-horizontal-pod-autoscaler/api/v1alpha1"
 	"sample.com/custom-horizontal-pod-autoscaler/internal/metrics"
 	"sample.com/custom-horizontal-pod-autoscaler/test/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -34,11 +34,11 @@ var _ = Describe("Syncer", func() {
 	ctx := context.Background()
 
 	It("Should get desiredMinMaxReplicas", func() {
-		mt := customautoscalingv1.Condition{
+		mt := customautoscalingv1alpha1.Condition{
 			Type: "training",
 			Id:   "7-21",
 		}
-		persedQueryResults := map[customautoscalingv1.Condition]string{mt: "1"}
+		persedQueryResults := map[customautoscalingv1alpha1.Condition]string{mt: "1"}
 		metricsCollector := metrics.FakeNewCollector(persedQueryResults)
 		namespacedName := types.NamespacedName{Namespace: "dummy-namespace", Name: "test-customhpa"}
 		syncer, err := New(metricsCollector, k8sClient, namespacedName, WithSyncersInterval(10*time.Millisecond))
@@ -52,7 +52,7 @@ var _ = Describe("Syncer", func() {
 	})
 
 	BeforeEach(func() {
-		err := k8sClient.DeleteAllOf(ctx, &customautoscalingv1.CustomHorizontalPodAutoscaler{}, client.InNamespace("dummy-namespace"))
+		err := k8sClient.DeleteAllOf(ctx, &customautoscalingv1alpha1.CustomHorizontalPodAutoscaler{}, client.InNamespace("dummy-namespace"))
 
 		customHorizontalPodAutoscaler := util.NewCustomHorizontalPodAutoscaler()
 		err = k8sClient.Create(ctx, customHorizontalPodAutoscaler)

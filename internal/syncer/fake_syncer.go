@@ -19,17 +19,17 @@ package syncer
 import (
 	"context"
 
-	apiv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
+	customautoscalingv1alpha1 "sample.com/custom-horizontal-pod-autoscaler/api/v1alpha1"
 )
 
 type FakeSyncer struct {
-	desiredConditionalReplicasSpec apiv1.ConditionalReplicasSpec
+	desiredConditionalReplicasSpec customautoscalingv1alpha1.ConditionalReplicasSpec
 }
 
 // Guarantee *FakeSyncer implements Syncer.
 var _ Syncer = (*FakeSyncer)(nil)
 
-func FakeNew(desiredConditionalReplicasSpec apiv1.ConditionalReplicasSpec) *FakeSyncer {
+func FakeNew(desiredConditionalReplicasSpec customautoscalingv1alpha1.ConditionalReplicasSpec) *FakeSyncer {
 	return &FakeSyncer{
 		desiredConditionalReplicasSpec: desiredConditionalReplicasSpec,
 	}
@@ -41,6 +41,6 @@ func (s *FakeSyncer) Start(ctx context.Context) {
 func (s *FakeSyncer) Stop() {
 }
 
-func (s *FakeSyncer) GetDesiredMinMaxReplicas() apiv1.ConditionalReplicasSpec {
+func (s *FakeSyncer) GetDesiredMinMaxReplicas() customautoscalingv1alpha1.ConditionalReplicasSpec {
 	return s.desiredConditionalReplicasSpec
 }

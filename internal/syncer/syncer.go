@@ -22,7 +22,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
-	customautoscalingv1 "sample.com/custom-horizontal-pod-autoscaler/api/v1"
+	customautoscalingv1alpha1 "sample.com/custom-horizontal-pod-autoscaler/api/v1alpha1"
 	metricspkg "sample.com/custom-horizontal-pod-autoscaler/internal/metrics"
 	ctrlClient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -31,7 +31,7 @@ import (
 type Syncer interface {
 	Start(ctx context.Context)
 	Stop()
-	GetDesiredMinMaxReplicas() customautoscalingv1.ConditionalReplicasSpec
+	GetDesiredMinMaxReplicas() customautoscalingv1alpha1.ConditionalReplicasSpec
 }
 
 type syncer struct {
@@ -39,7 +39,7 @@ type syncer struct {
 	ctrlClient                     ctrlClient.Client
 	interval                       time.Duration
 	stopCh                         chan struct{}
-	desiredConditionalReplicasSpec customautoscalingv1.ConditionalReplicasSpec
+	desiredConditionalReplicasSpec customautoscalingv1alpha1.ConditionalReplicasSpec
 	namespacedName                 types.NamespacedName
 }
 
@@ -54,7 +54,7 @@ func New(metricsCollector metricspkg.MetricsCollector, ctrlClient ctrlClient.Cli
 		metricsCollector:               metricsCollector,
 		ctrlClient:                     ctrlClient,
 		namespacedName:                 namespacedName,
-		desiredConditionalReplicasSpec: customautoscalingv1.ConditionalReplicasSpec{},
+		desiredConditionalReplicasSpec: customautoscalingv1alpha1.ConditionalReplicasSpec{},
 	}
 
 	for _, opt := range opts {
@@ -72,7 +72,7 @@ func WithSyncersInterval(interval time.Duration) Option {
 
 func (s *syncer) getConditionalReplicasTarget(ctx context.Context) {
 	logger := log.FromContext(ctx)
-	var current customautoscalingv1.CustomHorizontalPodAutoscaler
+	var current customautoscalingv1alpha1.CustomHorizontalPodAutoscaler
 	s.ctrlClient.Get(ctx, s.namespacedName, &current)
 	s.updateDesiredMinMaxReplicas(ctx)
 
@@ -94,7 +94,7 @@ func (s *syncer) getConditionalReplicasTarget(ctx context.Context) {
 }
 
 func (s *syncer) updateDesiredMinMaxReplicas(ctx context.Context) {
-	var current customautoscalingv1.CustomHorizontalPodAutoscaler
+	var current customautoscalingv1alpha1.CustomHorizontalPodAutoscaler
 	s.ctrlClient.Get(ctx, s.namespacedName, &current)
 
 	s.desiredConditionalReplicasSpec.MinReplicas = pointer.Int32(1)
@@ -104,7 +104,7 @@ func (s *syncer) updateDesiredMinMaxReplicas(ctx context.Context) {
 	s.desiredConditionalReplicasSpec.MaxReplicas = &current.Spec.MaxReplicas
 
 	for _, target := range current.Spec.ConditionalReplicasSpecs {
-		k := customautoscalingv1.Condition{
+		k := customautoscalingv1alpha1.Condition{
 			Type: target.Condition.Type,
 			Id:   target.Condition.Id,
 		}
@@ -121,14 +121,14 @@ func (s *syncer) updateDesiredMinMaxReplicas(ctx context.Context) {
 }
 
 func (s *syncer) updateStatus(ctx context.Context) error {
-	var current customautoscalingv1.CustomHorizontalPodAutoscaler
+	var current customautoscalingv1alpha1.CustomHorizontalPodAutoscaler
 	s.ctrlClient.Get(ctx, s.namespacedName, &current)
 	current.Status.DesiredMinReplicas = *s.desiredConditionalReplicasSpec.MinReplicas
 	current.Status.DesiredMaxReplicas = *s.desiredConditionalReplicasSpec.MaxReplicas
 	return s.ctrlClient.Status().Update(ctx, &current)
 }
 
-func (s *syncer) GetDesiredMinMaxReplicas() customautoscalingv1.ConditionalReplicasSpec {
+func (s *syncer) GetDesiredMinMaxReplicas() customautoscalingv1alpha1.ConditionalReplicasSpec {
 	return s.desiredConditionalReplicasSpec
 }
 
