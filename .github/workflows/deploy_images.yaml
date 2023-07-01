@@ -5,15 +5,12 @@ name: Create and publish a Docker image
 
 # See: https://github.com/docker/metadata-action
 on:
-  workflow_dispatch:
   push:
-    branches:
-      - 'main'
-    tags:
-      - 'v*'
+    branches: [main]
+    tags: [v*]
   pull_request:
-    branches:
-      - 'main'
+    branches: [main]
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
