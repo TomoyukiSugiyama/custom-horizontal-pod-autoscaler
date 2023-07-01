@@ -21,7 +21,7 @@ jobs:
 
       - name: Create New Pull Request
         id: cpr
-        uses: ./
+        uses: peter-evans/create-pull-request@v5
         with:
           commit-message: 'Create new release.'
           committer: GitHub <noreply@github.com>
