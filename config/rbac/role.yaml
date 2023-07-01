@@ -6,6 +6,32 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - autoscaling
+  resources:
+  - horizontalpodautoscalers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - autoscaling
+  resources:
+  - horizontalpodautoscalers/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - autoscaling
+  resources:
+  - horizontalpodautoscalers/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - custom-autoscaling.sample.com
   resources:
   - customhorizontalpodautoscalers
