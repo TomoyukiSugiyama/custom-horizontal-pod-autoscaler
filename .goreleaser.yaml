@@ -1,0 +1,26 @@
+changelog:
+  use: github
+
+before:
+  hooks:
+  - go mod tidy
+  - go mod download
+
+builds:
+- main: ./cmd/main.go
+  goos:
+  - linux
+  - darwin
+  - windows
+
+archives:
+- replacements:
+    darwin: Darwin
+    386: i386
+    amd64: x86_64
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ .Tag }}-next"

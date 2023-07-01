@@ -6,19 +6,29 @@ on:
     types: [closed]
 
 jobs:
-  release:
+  bump-tag:
     if: ${{ github.head_ref == 'release' && github.event.pull_request.merged == true }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+
+      - uses: actions-ecosystem/action-get-merged-pull-request@v1
+        id: get-merged-pull-request
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions-ecosystem/action-release-label@v1
         id: release-label
-        if: ${{ github.event.pull_request.merged == true }}
+        if: ${{ steps.get-merged-pull-request.outputs.title != null }}
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          labels: ${{ steps.get-merged-pull-request.outputs.labels }}
 
       - uses: actions-ecosystem/action-get-latest-tag@v1
         id: get-latest-tag
         if: ${{ steps.release-label.outputs.level != null }}
+        with:
+          semver_only: true
 
       - uses: actions-ecosystem/action-bump-semver@v1
         id: bump-semver
@@ -28,7 +38,7 @@ jobs:
           level: ${{ steps.release-label.outputs.level }}
 
       - uses: actions-ecosystem/action-push-tag@v1
-        if: ${{ steps.release-label.outputs.level != null }}
+        if: ${{ steps.bump-semver.outputs.new_version != null }}
         with:
           tag: ${{ steps.bump-semver.outputs.new_version }}
-          message: '${{ steps.bump-semver.outputs.new_version }}: PR #${{ github.event.pull_request.number }} ${{ github.event.pull_request.title }}'
+          message: "${{ steps.bump-semver.outputs.new_version }}: PR #${{ steps.get-merged-pull-request.outputs.number }} ${{ steps.get-merged-pull-request.outputs.title }}"
