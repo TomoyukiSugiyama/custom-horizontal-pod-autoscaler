@@ -24,13 +24,13 @@ jobs:
 
       - uses: actions-ecosystem/action-bump-semver@v1
         id: bump-semver
-        if: ${{ steps.release-label.outputs.level != null }}
+        if: ${{ steps.get-latest-tag.outputs.tag != null }}
         with:
           current_version: ${{ steps.get-latest-tag.outputs.tag }}
           level: ${{ github.event.inputs.release_level }}
 
       - name: Make changes to pull request
-        if: ${{ steps.release-label.outputs.level != null }}
+        if: ${{ steps.bump-semver.outputs.new_version != null }}
         run: ${{ steps.bump-semver.outputs.new_version }} > .version
 
       - name: Create New Pull Request
