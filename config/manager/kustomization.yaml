@@ -5,4 +5,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: ghcr.io/tomoyukisugiyama/custom-horizontal-pod-autoscaler
-  newTag: pr-48
+  newTag: main
