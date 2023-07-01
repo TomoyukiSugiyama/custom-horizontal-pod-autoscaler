@@ -9,6 +9,15 @@ Controller:
 Metrics:
   - internal/metrics/**/*
 
+Syncer:
+  - internal/syncer/**/*
+
+TestUtil:
+  - test/util/**/*
+
+Config:
+  - config/**/*
+
 GitHub Actions:
   - .github/workflows/**/*
   - .github/dependabot.yml
