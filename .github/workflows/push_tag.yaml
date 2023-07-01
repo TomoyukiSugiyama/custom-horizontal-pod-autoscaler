@@ -38,6 +38,7 @@ jobs:
           level: ${{ steps.release-label.outputs.level }}
 
       - if: ${{ steps.bump-semver.outputs.new_version != null }}
+        id: bump-tag
         run: |
           git config --global user.name ${{ github.actor }}
           git config --global user.email ${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com
@@ -45,9 +46,9 @@ jobs:
           git push origin ${{ steps.bump-semver.outputs.new_version }}
   deploy-images:
     needs: bump-tag
-    if: ${{ needs.bump-tag.outputs.new_version != null }}
+    if: ${{ needs.bump-semver.outputs.new_version != null }}
     uses: TomoyukiSugiyama/custom-horizontal-pod-autoscaler/.github/workflows/deploy_images.yaml@main
   create-release:
     needs: bump-tag
-    if: ${{ needs.bump-tag.outputs.new_version != null }}
+    if: ${{ needs.bump-semver.outputs.new_version != null }}
     uses: TomoyukiSugiyama/custom-horizontal-pod-autoscaler/.github/workflows/create_release.yaml@main
