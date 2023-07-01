@@ -171,6 +171,10 @@ func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscal
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      hpaName,
 			Namespace: customHPA.Namespace,
+			Labels: map[string]string{
+				"name":      hpaName,
+				"namespace": customHPA.Namespace,
+			},
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(&customHPA, customautoscalingv1alpha1.SchemeBuilder.GroupVersion.WithKind("CustomHorizontalPodAutoscaler")),
 			},
