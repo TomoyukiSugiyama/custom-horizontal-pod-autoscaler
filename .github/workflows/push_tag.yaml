@@ -37,8 +37,7 @@ jobs:
           current_version: ${{ steps.get-latest-tag.outputs.tag }}
           level: ${{ steps.release-label.outputs.level }}
 
-      - uses: actions-ecosystem/action-push-tag@v1
-        if: ${{ steps.bump-semver.outputs.new_version != null }}
+      - if: ${{ steps.bump-semver.outputs.new_version != null }}
         run: |
           git config --global user.name ${{ github.actor }}
           git config --global user.email ${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com
