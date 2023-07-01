@@ -20,10 +20,10 @@ import (
 	"context"
 	"time"
 
+	customautoscalingv1alpha1 "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/api/v1alpha1"
+	metricspkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/metrics"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
-	customautoscalingv1alpha1 "sample.com/custom-horizontal-pod-autoscaler/api/v1alpha1"
-	metricspkg "sample.com/custom-horizontal-pod-autoscaler/internal/metrics"
 	ctrlClient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )

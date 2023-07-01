@@ -1,4 +1,4 @@
-module sample.com/custom-horizontal-pod-autoscaler
+module github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler
 
 go 1.19
 

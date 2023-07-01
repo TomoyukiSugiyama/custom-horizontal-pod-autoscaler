@@ -20,6 +20,10 @@ import (
 	"context"
 	"time"
 
+	customautoscalingv1alpha1 "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/api/v1alpha1"
+	metricspkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/metrics"
+	syncerpkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/syncer"
+	"github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/test/util"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	prometheusapi "github.com/prometheus/client_golang/api"
@@ -29,10 +33,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/utils/pointer"
-	customautoscalingv1alpha1 "sample.com/custom-horizontal-pod-autoscaler/api/v1alpha1"
-	metricspkg "sample.com/custom-horizontal-pod-autoscaler/internal/metrics"
-	syncerpkg "sample.com/custom-horizontal-pod-autoscaler/internal/syncer"
-	"sample.com/custom-horizontal-pod-autoscaler/test/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )

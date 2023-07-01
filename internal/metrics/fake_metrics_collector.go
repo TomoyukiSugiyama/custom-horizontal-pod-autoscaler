@@ -20,7 +20,7 @@ import (
 	"context"
 	"sync"
 
-	customautoscalingv1alpha1 "sample.com/custom-horizontal-pod-autoscaler/api/v1alpha1"
+	customautoscalingv1alpha1 "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/api/v1alpha1"
 )
 
 type FakeMetricsCollector struct {
