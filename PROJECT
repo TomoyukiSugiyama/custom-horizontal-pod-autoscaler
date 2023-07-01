@@ -15,6 +15,6 @@ resources:
   domain: sample.com
   group: custom-autoscaling
   kind: CustomHorizontalPodAutoscaler
-  path: sample.com/custom-horizontal-pod-autoscaler/api/v1alpha
+  path: sample.com/custom-horizontal-pod-autoscaler/api/v1alpha1
   version: v1alpha1
 version: "3"

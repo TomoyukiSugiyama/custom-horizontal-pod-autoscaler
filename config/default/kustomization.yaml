@@ -6,7 +6,7 @@ namespace: custom-horizontal-pod-autoscaler-system
 # "wordpress" becomes "alices-wordpress".
 # Note that it should also match with the prefix (text before '-') of the namespace
 # field above.
-namePrefix: custom-horizontal-pod-autoscaler-
+namePrefix: custom-hpa-
 
 # Labels to add to all resources and selectors.
 #labels:
@@ -24,7 +24,7 @@ resources:
 # [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'. 'WEBHOOK' components are required.
 #- ../certmanager
 # [PROMETHEUS] To enable prometheus monitor, uncomment all sections with 'PROMETHEUS'.
-#- ../prometheus
+- ../prometheus
 
 patchesStrategicMerge:
 # Protect the /metrics endpoint by putting it behind auth.

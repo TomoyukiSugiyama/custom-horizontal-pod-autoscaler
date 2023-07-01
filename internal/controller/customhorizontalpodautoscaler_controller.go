@@ -53,6 +53,9 @@ type Option func(*CustomHorizontalPodAutoscalerReconciler)
 //+kubebuilder:rbac:groups=custom-autoscaling.sample.com,resources=customhorizontalpodautoscalers,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=custom-autoscaling.sample.com,resources=customhorizontalpodautoscalers/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=custom-autoscaling.sample.com,resources=customhorizontalpodautoscalers/finalizers,verbs=update
+//+kubebuilder:rbac:groups=autoscaling,resources=horizontalpodautoscalers,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=autoscaling,resources=horizontalpodautoscalers/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=autoscaling,resources=horizontalpodautoscalers/finalizers,verbs=update
 
 func NewReconcile(Client client.Client, Scheme *runtime.Scheme, metricsCollector metricspkg.MetricsCollector, opts ...Option) *CustomHorizontalPodAutoscalerReconciler {
 
