@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Create Pull Request
+      - name: Create New Pull Request
         id: cpr
         uses: ./
         with:
