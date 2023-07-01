@@ -31,7 +31,7 @@ jobs:
 
       - name: Make changes to pull request
         if: ${{ steps.bump-semver.outputs.new_version != null }}
-        run: ${{ steps.bump-semver.outputs.new_version }} > .version
+        run: echo ${{ steps.bump-semver.outputs.new_version }} > .version
 
       - name: Create New Pull Request
         id: cpr
