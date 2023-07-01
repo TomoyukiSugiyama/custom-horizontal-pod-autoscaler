@@ -46,9 +46,9 @@ jobs:
           git push origin ${{ steps.bump-semver.outputs.new_version }}
   deploy-images:
     needs: bump-tag
-    if: ${{ needs.bump-semver.outputs.new_version != null }}
+    if: ${{ steps.bump-semver.outputs.new_version != null }}
     uses: TomoyukiSugiyama/custom-horizontal-pod-autoscaler/.github/workflows/deploy_images.yaml@main
   create-release:
     needs: bump-tag
-    if: ${{ needs.bump-semver.outputs.new_version != null }}
+    if: ${{ steps.bump-semver.outputs.new_version != null }}
     uses: TomoyukiSugiyama/custom-horizontal-pod-autoscaler/.github/workflows/create_release.yaml@main
