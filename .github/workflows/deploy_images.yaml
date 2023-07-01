@@ -11,11 +11,11 @@ env:
  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
- build-and-push-image:
-   runs-on: ubuntu-latest
-   permissions:
-     contents: read
-     packages: write
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
     - uses: actions/checkout@v3
