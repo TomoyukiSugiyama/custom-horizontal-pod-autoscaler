@@ -3,13 +3,13 @@ kind: CustomHorizontalPodAutoscaler
 metadata:
   labels:
     app.kubernetes.io/name: customhorizontalpodautoscaler
-    app.kubernetes.io/instance: customhorizontalpodautoscaler-sample
+    app.kubernetes.io/instance: sample-custom-hpa
     app.kubernetes.io/part-of: custom-horizontal-pod-autoscaler
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: custom-horizontal-pod-autoscaler
-  name: customhorizontalpodautoscaler-sample
+  name: sample-custom-hpa
 spec:
-  horizontalPodAutoscalerName: custom-hpa
+  horizontalPodAutoscalerName: sample-hpa
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
