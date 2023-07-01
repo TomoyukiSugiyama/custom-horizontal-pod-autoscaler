@@ -144,7 +144,6 @@ func (s *syncer) Start(ctx context.Context) {
 		select {
 		case <-ticker.C:
 			logger.Info("received scheduler tick")
-			ctx = context.Background()
 			s.getConditionalReplicasTarget(ctx)
 			if err := s.updateStatus(ctx); err != nil {
 				logger.Error(err, "unable to update status")
