@@ -8,9 +8,13 @@ on:
         description: 'select version level'
         default: minor
         options:
-          - patch
-          - minor
           - major
+          - premajor
+          - minor
+          - preminor
+          - patch
+          - prepatch
+          - prerelease
         required: true
 
 jobs:
