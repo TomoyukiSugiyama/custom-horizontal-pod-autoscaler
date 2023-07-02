@@ -39,6 +39,8 @@ jobs:
 
       - if: ${{ steps.bump-semver.outputs.new_version != null }}
         id: bump-tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT }}
         run: |
           git config --global user.name ${{ github.actor }}
           git config --global user.email ${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com
