@@ -44,9 +44,13 @@ jobs:
           git config --global user.email ${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com
           git tag -a ${{ steps.bump-semver.outputs.new_version }} -m "${{ steps.bump-semver.outputs.new_version }}: PR #${{ steps.get-merged-pull-request.outputs.number }} ${{ steps.get-merged-pull-request.outputs.title }}"
           git push origin ${{ steps.bump-semver.outputs.new_version }}
+          new_version=${{ steps.bump-semver.outputs.new_version }}
+          echo "::set-output name=new_version::$new_version"
   deploy-images:
     needs: bump-tag
     uses: TomoyukiSugiyama/custom-horizontal-pod-autoscaler/.github/workflows/deploy_images.yaml@main
+    with:
+      version: ${{ needs.bump-tag.outputs.new_version }}
   create-release:
     needs: bump-tag
     uses: TomoyukiSugiyama/custom-horizontal-pod-autoscaler/.github/workflows/create_release.yaml@main

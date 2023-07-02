@@ -6,6 +6,11 @@ name: Create and publish a Docker image
 # See: https://github.com/docker/metadata-action
 on:
   workflow_call:
+    inputs:
+      version:
+        description: tag version
+        required: true
+        type: string
   push:
     branches: [main]
     tags: [v*]
@@ -25,6 +30,19 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
+      - name: Extract Current Tag
+        if: github.event_name != 'pull_request'
+        run: |
+          current=${GITHUB_REF#refs/tags/}
+          if [[ -n $CURRENT_TAG ]]; then
+            current=$CURRENT_TAG
+          fi
+          echo "::set-output name=tag::$current"
+        id: current-tag
+        env:
+          CURRENT_TAG: ${{ inputs.version }}
+
       - name: Login to GitHub Container Registry
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v2
@@ -33,21 +51,22 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+      # - name: Extract metadata (tags, labels) for Docker
+      #   id: meta
+      #   uses: docker/metadata-action@v4
+      #   with:
+      #     images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      #     tags: |
+      #       type=ref,event=branch
+      #       type=ref,event=pr
+      #       type=semver,pattern={{version}}
+      #       type=semver,pattern={{major}}.{{minor}}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.current-tag.outputs.tag }}
+          # tags: ${{ steps.meta.outputs.tags }}
+          # labels: ${{ steps.meta.outputs.labels }}
