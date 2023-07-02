@@ -1,9 +1,8 @@
 name: Create Release
 
 on:
-  workflow_call:
   push:
-    tags: [v*]
+    tags: ['v*']
 
 jobs:
   release:
