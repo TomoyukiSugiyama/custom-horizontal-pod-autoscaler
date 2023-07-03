@@ -56,3 +56,8 @@ jobs:
           draft: false
           branch: release
           delete-branch: true
+
+    - name: Enable Pull Request Automerge
+      run: gh pr merge --merge --auto "1"
+      env:
+        GH_TOKEN: ${{ secrets.PAT }}
