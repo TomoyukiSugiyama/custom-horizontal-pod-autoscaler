@@ -48,6 +48,7 @@ jobs:
           git push origin ${{ steps.bump-semver.outputs.new_version }}
   release:
     needs: bump-tag
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
