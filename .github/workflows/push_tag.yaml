@@ -46,3 +46,17 @@ jobs:
           git config --global user.email ${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com
           git tag -a ${{ steps.bump-semver.outputs.new_version }} -m "${{ steps.bump-semver.outputs.new_version }}: PR #${{ steps.get-merged-pull-request.outputs.number }} ${{ steps.get-merged-pull-request.outputs.title }}"
           git push origin ${{ steps.bump-semver.outputs.new_version }}
+  release:
+    needs: bump-tag
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
+      - uses: goreleaser/goreleaser-action@v4
+        with:
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
