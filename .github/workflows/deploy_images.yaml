@@ -10,8 +10,6 @@ on:
     tags: ['v*']
   pull_request:
     branches: [main]
-  release:
-    types: [published]
 
 env:
   REGISTRY: ghcr.io
