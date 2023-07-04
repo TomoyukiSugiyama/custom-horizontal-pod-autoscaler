@@ -65,5 +65,5 @@ jobs:
       - name: Enable Pull Request Automerge
         run: gh pr merge --auto --squash "$PR_URL"
         env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_URL: ${{ steps.cpr.outputs.pull-request-url }}"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
