@@ -13,11 +13,13 @@ on:
           - patch
         required: true
 
+permissions:
+  pull-requests: write
+  contents: write
+
 jobs:
   createPullRequest:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - uses: actions/checkout@v3
@@ -61,4 +63,7 @@ jobs:
           delete-branch: true
 
       - name: Enable Pull Request Automerge
-        run: gh pr merge --squash --auto "1"
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
