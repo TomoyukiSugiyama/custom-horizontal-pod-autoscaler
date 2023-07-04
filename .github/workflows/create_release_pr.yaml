@@ -61,4 +61,4 @@ jobs:
           delete-branch: true
 
       - name: Enable Pull Request Automerge
-        run: gh pr merge --squash --auto  
+        run: gh pr merge --squash --auto "1"
