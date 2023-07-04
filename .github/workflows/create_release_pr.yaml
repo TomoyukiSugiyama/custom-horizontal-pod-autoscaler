@@ -17,7 +17,6 @@ jobs:
   createPullRequest:
     runs-on: ubuntu-latest
     env:
-      PR_URL: ${{github.event.pull_request.html_url}}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
@@ -62,4 +61,4 @@ jobs:
           delete-branch: true
 
       - name: Enable Pull Request Automerge
-        run: gh pr merge ${{ env.PR_URL }} --squash --auto 
+        run: gh pr merge --squash --auto  
