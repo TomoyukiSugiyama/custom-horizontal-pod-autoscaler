@@ -4,10 +4,13 @@
 ![Go Build](https://github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/workflows/Go%20Build/badge.svg)
 [![codecov](https://codecov.io/gh/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/branch/main/graph/badge.svg?token=GHNQ0Z9TRH)](https://codecov.io/gh/TomoyukiSugiyama/custom-horizontal-pod-autoscaler)
 
-
-Custom Horizontal Pod Autoscaler is an autoscaler that allows the upper and lower limits of the number of replicas of the [Horizontal Pod Autoscaler](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/) to be changed by Prometheus metrics. It is used when temporary scaling is desired.
+Custom Horizontal Pod Autoscaler is an autoscaler that allows the minReplicas and maxReplicas of a [Horizontal Pod Autoscaler](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/) to be updated by Prometheus metrics. It is used when temporary scaling is required.
 
 ## Description
+
+The user uses CronJob to add temporary scale metrics that output 0 (disabled) or 1 (enabled). The custom horizontal pod autoscaler retrieves metrics from the prometheus.
+
+The custom horizontal pod autoscaler is set to minReplicas and maxReplicas, which are used when conditions are met. If the conditions are not met, the default minReplicas and maxReplicas will be in effect.
 
 ![description](docs/assets/description.png)
 
