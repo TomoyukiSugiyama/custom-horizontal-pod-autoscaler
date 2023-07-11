@@ -15,7 +15,7 @@ RUN go mod download
 COPY cmd/main.go cmd/main.go
 COPY api/ api/
 COPY internal/controller/ internal/controller/
-COPY internal/metrics/ internal/metrics/
+COPY internal/metrics-collector/ internal/metrics-collector/
 COPY internal/syncer/ internal/syncer/
 
 # Build
