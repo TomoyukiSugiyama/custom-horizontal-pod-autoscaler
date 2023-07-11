@@ -21,7 +21,7 @@ import (
 	"time"
 
 	customautoscalingv1alpha1 "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/api/v1alpha1"
-	metricspkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/metrics"
+	metricspkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/metrics-collector"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
 	ctrlClient "sigs.k8s.io/controller-runtime/pkg/client"

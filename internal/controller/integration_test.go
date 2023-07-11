@@ -6,7 +6,7 @@ import (
 	"time"
 
 	customautoscalingv1alpha1 "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/api/v1alpha1"
-	metricspkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/metrics"
+	metricspkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/metrics-collector"
 	"github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/test/util"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

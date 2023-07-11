@@ -21,7 +21,7 @@ import (
 	"time"
 
 	customautoscalingv1alpha1 "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/api/v1alpha1"
-	"github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/metrics"
+	metricspkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/metrics-collector"
 	"github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/test/util"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -39,7 +39,7 @@ var _ = Describe("Syncer", func() {
 			Id:   "7-21",
 		}
 		persedQueryResults := map[customautoscalingv1alpha1.Condition]string{mt: "1"}
-		metricsCollector := metrics.FakeNewCollector(persedQueryResults)
+		metricsCollector := metricspkg.FakeNewCollector(persedQueryResults)
 		namespacedName := types.NamespacedName{Namespace: "dummy-namespace", Name: "test-customhpa"}
 		syncer, err := New(metricsCollector, k8sClient, namespacedName, WithSyncersInterval(10*time.Millisecond))
 		Expect(err).NotTo(HaveOccurred())
