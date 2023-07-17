@@ -16,6 +16,7 @@ COPY cmd/main.go cmd/main.go
 COPY api/ api/
 COPY internal/controller/ internal/controller/
 COPY internal/metrics-collector/ internal/metrics-collector/
+COPY internal/metrics-pusher/ internal/metrics-pusher/
 COPY internal/syncer/ internal/syncer/
 
 # Build
