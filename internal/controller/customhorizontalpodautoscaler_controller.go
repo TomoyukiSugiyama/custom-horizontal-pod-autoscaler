@@ -23,6 +23,7 @@ import (
 
 	customautoscalingv1alpha1 "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/api/v1alpha1"
 	metricspkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/metrics-collector"
+	pusherpkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/metrics-pusher"
 	syncerpkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/syncer"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -43,6 +44,7 @@ type CustomHorizontalPodAutoscalerReconciler struct {
 	client.Client
 	Scheme           *runtime.Scheme
 	metricsCollector metricspkg.MetricsCollector
+	metricsPuser     pusherpkg.MetricsPusher
 	syncers          map[types.NamespacedName]syncerpkg.Syncer
 	syncersInterval  time.Duration
 	mu               sync.RWMutex
@@ -57,12 +59,13 @@ type Option func(*CustomHorizontalPodAutoscalerReconciler)
 //+kubebuilder:rbac:groups=autoscaling,resources=horizontalpodautoscalers/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=autoscaling,resources=horizontalpodautoscalers/finalizers,verbs=update
 
-func NewReconcile(Client client.Client, Scheme *runtime.Scheme, metricsCollector metricspkg.MetricsCollector, opts ...Option) *CustomHorizontalPodAutoscalerReconciler {
+func NewReconcile(Client client.Client, Scheme *runtime.Scheme, metricsCollector metricspkg.MetricsCollector, metricsPusher pusherpkg.MetricsPusher, opts ...Option) *CustomHorizontalPodAutoscalerReconciler {
 
 	r := &CustomHorizontalPodAutoscalerReconciler{
 		Client:           Client,
 		Scheme:           Scheme,
 		metricsCollector: metricsCollector,
+		metricsPuser:     metricsPusher,
 		syncers:          make(map[types.NamespacedName]syncerpkg.Syncer),
 		syncersInterval:  30 * time.Second,
 	}
@@ -253,6 +256,8 @@ func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(
 		Conditions:         currentHPA.Status.Conditions,
 		ObservedGeneration: currentHPA.Status.ObservedGeneration,
 	}
+
+	r.metricsPuser.SetSyncerTotal(float64(len(r.syncers)))
 
 	err = r.Status().Update(ctx, &currendCustomHPA)
 	if err != nil {
