@@ -59,13 +59,12 @@ type Option func(*CustomHorizontalPodAutoscalerReconciler)
 //+kubebuilder:rbac:groups=autoscaling,resources=horizontalpodautoscalers/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=autoscaling,resources=horizontalpodautoscalers/finalizers,verbs=update
 
-func NewReconcile(Client client.Client, Scheme *runtime.Scheme, metricsCollector metricspkg.MetricsCollector, metricsPusher pusherpkg.MetricsPusher, opts ...Option) *CustomHorizontalPodAutoscalerReconciler {
+func NewReconcile(Client client.Client, Scheme *runtime.Scheme, metricsCollector metricspkg.MetricsCollector, opts ...Option) *CustomHorizontalPodAutoscalerReconciler {
 
 	r := &CustomHorizontalPodAutoscalerReconciler{
 		Client:           Client,
 		Scheme:           Scheme,
 		metricsCollector: metricsCollector,
-		metricsPuser:     metricsPusher,
 		syncers:          make(map[types.NamespacedName]syncerpkg.Syncer),
 		syncersInterval:  30 * time.Second,
 	}
@@ -86,6 +85,12 @@ func WithSyncers(syncers map[types.NamespacedName]syncerpkg.Syncer) Option {
 func WithSyncersInterval(syncersInterval time.Duration) Option {
 	return func(r *CustomHorizontalPodAutoscalerReconciler) {
 		r.syncersInterval = syncersInterval
+	}
+}
+
+func WithMetricsPusher(metricsPuser pusherpkg.MetricsPusher) Option {
+	return func(r *CustomHorizontalPodAutoscalerReconciler) {
+		r.metricsPuser = metricsPuser
 	}
 }
 
@@ -257,7 +262,9 @@ func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(
 		ObservedGeneration: currentHPA.Status.ObservedGeneration,
 	}
 
-	r.metricsPuser.SetSyncerTotal(float64(len(r.syncers)))
+	if r.metricsPuser != nil {
+		r.metricsPuser.SetSyncerTotal(float64(len(r.syncers)))
+	}
 
 	err = r.Status().Update(ctx, &currendCustomHPA)
 	if err != nil {

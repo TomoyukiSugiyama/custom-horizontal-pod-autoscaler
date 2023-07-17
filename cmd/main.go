@@ -126,7 +126,7 @@ func main() {
 		mgr.GetClient(),
 		mgr.GetScheme(),
 		collector,
-		pusher,
+		controller.WithMetricsPusher(pusher),
 		controller.WithSyncersInterval(*syncersInterval),
 	)
 

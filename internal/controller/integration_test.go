@@ -7,7 +7,6 @@ import (
 
 	customautoscalingv1alpha1 "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/api/v1alpha1"
 	metricspkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/metrics-collector"
-	pusherpkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/metrics-pusher"
 	"github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/test/util"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -126,9 +125,7 @@ var _ = Describe("Integration test", func() {
 		go collector.Start(ctx)
 		time.Sleep(100 * time.Millisecond)
 
-		dummyPusher, err := pusherpkg.NewPusher()
-
-		reconciler := NewReconcile(k8sClient, scheme.Scheme, collector, dummyPusher, WithSyncersInterval(50*time.Millisecond))
+		reconciler := NewReconcile(k8sClient, scheme.Scheme, collector, WithSyncersInterval(50*time.Millisecond))
 
 		err = reconciler.SetupWithManager(mgr)
 		Expect(err).NotTo(HaveOccurred())
