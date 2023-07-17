@@ -121,6 +121,10 @@ func main() {
 	defer collector.Stop()
 
 	pusher, err := pusherpkg.NewPusher()
+	if err != nil {
+		setupLog.Error(err, "unable to create new metrics pusher")
+		os.Exit(1)
+	}
 
 	controller := controller.NewReconcile(
 		mgr.GetClient(),
