@@ -27,6 +27,7 @@ import (
 	customautoscalingv1alpha1 "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/api/v1alpha1"
 	"github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/controller"
 	metricspkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/metrics-collector"
+	pusherpkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/metrics-pusher"
 	prometheusapi "github.com/prometheus/client_golang/api"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -118,10 +119,18 @@ func main() {
 
 	go collector.Start(ctx)
 	defer collector.Stop()
+
+	pusher, err := pusherpkg.NewPusher()
+	if err != nil {
+		setupLog.Error(err, "unable to create new metrics pusher")
+		os.Exit(1)
+	}
+
 	controller := controller.NewReconcile(
 		mgr.GetClient(),
 		mgr.GetScheme(),
 		collector,
+		controller.WithMetricsPusher(pusher),
 		controller.WithSyncersInterval(*syncersInterval),
 	)
 

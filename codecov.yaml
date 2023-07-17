@@ -4,7 +4,9 @@ coverage:
       default:
         target: 60%
         threshold: 1%
-
+    patch: off
+    changes: false
+    
 comment:
   layout: "reach, diff, flags, files"
   behavior: default

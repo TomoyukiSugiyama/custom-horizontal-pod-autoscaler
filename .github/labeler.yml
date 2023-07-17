@@ -6,8 +6,11 @@ Controller:
   - cmd/main.go
   - internal/controller/**/*
 
-Metrics:
-  - internal/metrics/**/*
+MetricsCollector:
+  - internal/metrics-collector/**/*
+
+MetricsPusher:
+  - internal/metrics-pusher/**/*
 
 Syncer:
   - internal/syncer/**/*
