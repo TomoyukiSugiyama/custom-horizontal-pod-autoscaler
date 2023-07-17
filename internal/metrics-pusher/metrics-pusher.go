@@ -20,9 +20,9 @@ func NewPusher(opts ...PusherOption) (MetricsPusher, error) {
 
 	p.syncerTotal = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "customhpa",
-		Name:      "syncertotal",
-		Help:      "Syncer Count",
-	}, []string{"name", "namespace"})
+		Name:      "syncer_total",
+		Help:      "Total number of syncers per controller",
+	}, []string{"controller"})
 	metrics.Registry.MustRegister(p.syncerTotal)
 
 	for _, opt := range opts {
@@ -33,5 +33,5 @@ func NewPusher(opts ...PusherOption) (MetricsPusher, error) {
 }
 
 func (p *metricsPusher) SetSyncerTotal(count float64) {
-	p.syncerTotal.WithLabelValues("test", "testns").Set(count)
+	p.syncerTotal.WithLabelValues("customhorizontalpodautoscaler").Set(count)
 }
