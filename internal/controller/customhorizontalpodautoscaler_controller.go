@@ -114,6 +114,9 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 			delete(r.syncers, req.NamespacedName)
 			r.mu.Unlock()
 		}
+		if r.metricsPuser != nil {
+			r.metricsPuser.SetSyncerTotal(float64(len(r.syncers)))
+		}
 		return ctrl.Result{}, nil
 	}
 
