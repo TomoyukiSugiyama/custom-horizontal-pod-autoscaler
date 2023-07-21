@@ -739,6 +739,13 @@ spec:
             description: CustomHorizontalPodAutoscalerStatus defines the observed
               state of CustomHorizontalPodAutoscaler
             properties:
+              collectorStatus:
+                description: collectorStatus is the status of the metrics collector
+                  (NotReady, Available)
+                enum:
+                - NotReady
+                - Available
+                type: string
               conditions:
                 description: conditions is the set of conditions required for this
                   autoscaler to scale its target, and indicates whether or not those
