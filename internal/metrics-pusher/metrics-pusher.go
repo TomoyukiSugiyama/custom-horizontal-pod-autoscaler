@@ -8,6 +8,7 @@ import (
 
 type MetricsPusher interface {
 	SetSyncerTotal(count float64)
+	SetCollectorStatus(namespace string, name string, status customautoscalingv1alpha1.CollectorStatus)
 }
 
 type metricsPusher struct {
