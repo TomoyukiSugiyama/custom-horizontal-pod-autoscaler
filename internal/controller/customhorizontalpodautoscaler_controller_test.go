@@ -22,6 +22,7 @@ import (
 
 	customautoscalingv1alpha1 "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/api/v1alpha1"
 	metricspkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/metrics-collector"
+	pusherpkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/metrics-pusher"
 	syncerpkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/syncer"
 	"github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/test/util"
 	. "github.com/onsi/ginkgo/v2"
@@ -104,7 +105,9 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 		dummyCollector, err := metricspkg.NewCollector(api)
 		Expect(err).NotTo(HaveOccurred())
 
-		reconciler := NewReconcile(k8sClient, scheme.Scheme, dummyCollector, WithSyncers(fakeSyncers))
+		fakePusher := pusherpkg.FakeNewPusher()
+
+		reconciler := NewReconcile(k8sClient, scheme.Scheme, dummyCollector, WithSyncers(fakeSyncers), WithMetricsPusher(fakePusher))
 
 		err = reconciler.SetupWithManager(mgr)
 		Expect(err).NotTo(HaveOccurred())

@@ -10,7 +10,7 @@ type FakeMetricsPusher struct {
 // Guarantee *FakeMetricsPusher implements MetricsPusher.
 var _ MetricsPusher = (*FakeMetricsPusher)(nil)
 
-func FakeNewCollector() *FakeMetricsPusher {
+func FakeNewPusher() *FakeMetricsPusher {
 	return &FakeMetricsPusher{}
 }
 
