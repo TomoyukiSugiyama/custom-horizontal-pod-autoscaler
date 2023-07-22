@@ -9,6 +9,9 @@ import (
 type MetricsPusher interface {
 	SetSyncerTotal(count float64)
 	SetCollectorStatus(namespace string, name string, status customautoscalingv1alpha1.CollectorStatus)
+	GetCollectorNotReady() *prometheus.GaugeVec
+	GetCollectorAvailable() *prometheus.GaugeVec
+	GetSyncerTotal() *prometheus.GaugeVec
 }
 
 type metricsPusher struct {
@@ -62,4 +65,16 @@ func (p *metricsPusher) SetCollectorStatus(namespace string, name string, status
 		p.collectorNotReady.WithLabelValues("customhorizontalpodautoscaler", name, namespace).Set(0)
 		p.collectorAvailable.WithLabelValues("customhorizontalpodautoscaler", name, namespace).Set(1)
 	}
+}
+
+func (p *metricsPusher) GetCollectorNotReady() *prometheus.GaugeVec {
+	return p.collectorNotReady
+}
+
+func (p *metricsPusher) GetCollectorAvailable() *prometheus.GaugeVec {
+	return p.collectorAvailable
+}
+
+func (p *metricsPusher) GetSyncerTotal() *prometheus.GaugeVec {
+	return p.syncerTotal
 }
