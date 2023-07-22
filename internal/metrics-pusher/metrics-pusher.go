@@ -27,21 +27,20 @@ func NewPusher(opts ...PusherOption) (MetricsPusher, error) {
 		Name:      "syncer_total",
 		Help:      "Total number of syncers per controller",
 	}, []string{"controller"})
-	metrics.Registry.MustRegister(p.syncerTotal)
 
 	p.collectorNotReady = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "customhpa",
 		Name:      "collector_notready",
 		Help:      "The controller status about not ready condition",
 	}, []string{"controller", "name", "namespace"})
-	metrics.Registry.MustRegister(p.collectorNotReady)
 
 	p.collectorAvailable = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "customhpa",
-		Name:      "collector_notready",
+		Name:      "collector_available",
 		Help:      "The controller status about available condition",
 	}, []string{"controller", "name", "namespace"})
-	metrics.Registry.MustRegister(p.collectorAvailable)
+
+	metrics.Registry.MustRegister(p.syncerTotal, p.collectorNotReady, p.collectorAvailable)
 
 	for _, opt := range opts {
 		opt(p)
