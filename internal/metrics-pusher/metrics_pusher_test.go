@@ -57,6 +57,33 @@ var _ = Describe("Metrics Pusher", func() {
 
 	})
 
+	It("Should get collectorAvailable", func() {
+		pusher.SetCollectorStatus("test-ns", "test-custom-hpa", customautoscalingv1alpha1.CollectorAvailable)
+
+		const metadataNotReady = `
+		# HELP customhpa_collector_notready The controller status about not ready condition
+		# TYPE customhpa_collector_notready gauge
+		`
+		expectedNotReady := `
+
+		customhpa_collector_notready{controller="customhorizontalpodautoscaler",name="test-custom-hpa",namespace="test-ns"} 0
+		`
+		err = testutil.CollectAndCompare(pusher.GetCollectorNotReady(), strings.NewReader(metadataNotReady+expectedNotReady), "customhpa_collector_notready")
+		Expect(err).NotTo(HaveOccurred())
+
+		const metadataAvailable = `
+		# HELP customhpa_collector_available The controller status about available condition
+		# TYPE customhpa_collector_available gauge
+		`
+		expectedAvailable := `
+
+		customhpa_collector_available{controller="customhorizontalpodautoscaler",name="test-custom-hpa",namespace="test-ns"} 1
+		`
+		err = testutil.CollectAndCompare(pusher.GetCollectorAvailable(), strings.NewReader(metadataAvailable+expectedAvailable), "customhpa_collector_notready")
+		Expect(err).NotTo(HaveOccurred())
+
+	})
+
 	BeforeEach(func() {
 		time.Sleep(100 * time.Millisecond)
 	})
