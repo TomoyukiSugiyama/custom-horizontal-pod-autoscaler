@@ -44,6 +44,10 @@ func (c *FakeMetricsCollector) GetPersedQueryResult() map[customautoscalingv1alp
 	return c.persedQueryResults
 }
 
+func (c *FakeMetricsCollector) GetStatus() customautoscalingv1alpha1.CollectorStatus {
+	return customautoscalingv1alpha1.CollectorAvailable
+}
+
 func (c *FakeMetricsCollector) Start(ctx context.Context) {
 }
 

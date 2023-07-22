@@ -32,6 +32,7 @@ type MetricsCollector interface {
 	Start(ctx context.Context)
 	Stop()
 	GetPersedQueryResult() map[customautoscalingv1alpha1.Condition]string
+	GetStatus() customautoscalingv1alpha1.CollectorStatus
 }
 
 type metricsCollector struct {
@@ -41,6 +42,7 @@ type metricsCollector struct {
 	query              string
 	persedQueryResults map[customautoscalingv1alpha1.Condition]string
 	mu                 sync.RWMutex
+	status             customautoscalingv1alpha1.CollectorStatus
 }
 
 type CollectorOption func(*metricsCollector)
@@ -51,6 +53,7 @@ func NewCollector(prometheusApi prometheusv1.API, opts ...CollectorOption) (Metr
 		interval:      30 * time.Second,
 		stopCh:        make(chan struct{}),
 		query:         "temporary_scale",
+		status:        customautoscalingv1alpha1.CollectorNotReady,
 	}
 
 	for _, opt := range opts {
@@ -72,12 +75,17 @@ func (c *metricsCollector) GetPersedQueryResult() map[customautoscalingv1alpha1.
 	return c.persedQueryResults
 }
 
+func (c *metricsCollector) GetStatus() customautoscalingv1alpha1.CollectorStatus {
+	return c.status
+}
+
 func (c *metricsCollector) getTemporaryScaleMetrics(ctx context.Context) {
 	logger := log.FromContext(ctx)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	queryResult, warning, err := c.prometheusApi.Query(ctx, c.query, time.Now())
 	if err != nil {
+		c.status = customautoscalingv1alpha1.CollectorNotReady
 		logger.Error(err, "unable to get temporary scale metrics")
 		return
 	}
@@ -86,7 +94,13 @@ func (c *metricsCollector) getTemporaryScaleMetrics(ctx context.Context) {
 	}
 
 	// ref: https://github.com/prometheus/client_golang/issues/1011
-	c.perseMetrics(queryResult.(model.Vector))
+	err = c.perseMetrics(queryResult.(model.Vector))
+	if err != nil {
+		c.status = customautoscalingv1alpha1.CollectorNotReady
+		logger.Error(err, "unable to perse metrics")
+		return
+	}
+
 	for key, queryResult := range c.persedQueryResults {
 		logger.Info(
 			"parsed query result",
@@ -95,6 +109,8 @@ func (c *metricsCollector) getTemporaryScaleMetrics(ctx context.Context) {
 			"value", queryResult,
 		)
 	}
+
+	c.status = customautoscalingv1alpha1.CollectorAvailable
 }
 
 func (c *metricsCollector) perseMetrics(samples model.Vector) error {
