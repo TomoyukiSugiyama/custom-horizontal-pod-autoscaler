@@ -20,9 +20,7 @@ type metricsPusher struct {
 	collectorAvailable *prometheus.GaugeVec
 }
 
-type PusherOption func(*metricsPusher)
-
-func NewPusher(opts ...PusherOption) (MetricsPusher, error) {
+func NewPusher() (MetricsPusher, error) {
 	p := &metricsPusher{}
 
 	p.syncerTotal = prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -44,10 +42,6 @@ func NewPusher(opts ...PusherOption) (MetricsPusher, error) {
 	}, []string{"controller", "name", "namespace"})
 
 	metrics.Registry.MustRegister(p.syncerTotal, p.collectorNotReady, p.collectorAvailable)
-
-	for _, opt := range opts {
-		opt(p)
-	}
 
 	return p, nil
 }
