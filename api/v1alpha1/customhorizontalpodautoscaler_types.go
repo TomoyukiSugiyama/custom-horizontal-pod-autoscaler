@@ -102,8 +102,8 @@ type CollectorStatus string
 const (
 	// CollectorNotReady indicates that the Metrics Collector is not ready to get metrics
 	CollectorNotReady CollectorStatus = "NotReady"
-	// CollectorAvailable indicates that the Metrics Collector is abailable to get metrics
-	CollectorAvailable CollectorStatus = "Abailable"
+	// CollectorAvailable indicates that the Metrics Collector is available to get metrics
+	CollectorAvailable CollectorStatus = "Available"
 )
 
 // CustomHorizontalPodAutoscalerStatus defines the observed state of CustomHorizontalPodAutoscaler
