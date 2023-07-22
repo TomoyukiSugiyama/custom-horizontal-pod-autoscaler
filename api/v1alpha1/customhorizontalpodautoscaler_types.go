@@ -95,6 +95,17 @@ type CustomHorizontalPodAutoscalerSpec struct {
 	Behavior *autoscalingv2.HorizontalPodAutoscalerBehavior `json:"behavior,omitempty" protobuf:"bytes,5,opt,name=behavior"`
 }
 
+// CollectorStatus defines the observed state of MetricsCollector
+// +kubebuilder:validation:Enum=NotReady;Available
+type CollectorStatus string
+
+const (
+	// CollectorNotReady indicates that the Metrics Collector is not ready to get metrics
+	CollectorNotReady CollectorStatus = "NotReady"
+	// CollectorAvailable indicates that the Metrics Collector is available to get metrics
+	CollectorAvailable CollectorStatus = "Available"
+)
+
 // CustomHorizontalPodAutoscalerStatus defines the observed state of CustomHorizontalPodAutoscaler
 type CustomHorizontalPodAutoscalerStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
@@ -142,6 +153,9 @@ type CustomHorizontalPodAutoscalerStatus struct {
 	// as last calculated by the custom autoscaler.
 	// +optional
 	DesiredMaxReplicas int32 `json:"desiredMaxReplicas"`
+	// collectorStatus is the status of the metrics collector (NotReady, Available)
+	// +optional
+	CollectorStatus CollectorStatus `json:"collectorStatus"`
 }
 
 //+kubebuilder:object:root=true

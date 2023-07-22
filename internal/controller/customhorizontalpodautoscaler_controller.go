@@ -151,7 +151,7 @@ func (r *CustomHorizontalPodAutoscalerReconciler) Reconcile(ctx context.Context,
 		return ctrl.Result{}, err
 	}
 
-	return r.updateStatus(ctx, customHPA)
+	return r.updateStatus(ctx, customHPA, r.metricsCollector)
 }
 
 // reconcileHorizontalPodAutoscaler is a reconcile function for horizontal pod autoscaling
@@ -240,6 +240,7 @@ func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscal
 func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(
 	ctx context.Context,
 	customHPA customautoscalingv1alpha1.CustomHorizontalPodAutoscaler,
+	metricsCollector metricspkg.MetricsCollector,
 ) (ctrl.Result, error) {
 	var currendCustomHPA customautoscalingv1alpha1.CustomHorizontalPodAutoscaler
 	err := r.Get(ctx, client.ObjectKey{Namespace: customHPA.Namespace, Name: customHPA.Name}, &currendCustomHPA)
@@ -263,6 +264,7 @@ func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(
 		CurrentMetrics:     currentHPA.Status.CurrentMetrics,
 		Conditions:         currentHPA.Status.Conditions,
 		ObservedGeneration: currentHPA.Status.ObservedGeneration,
+		CollectorStatus:    metricsCollector.GetStatus(),
 	}
 
 	if r.metricsPuser != nil {
