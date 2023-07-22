@@ -1,6 +1,7 @@
 package pusher
 
 import (
+	customautoscalingv1alpha1 "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/api/v1alpha1"
 	"github.com/prometheus/client_golang/prometheus"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
 )
@@ -10,7 +11,8 @@ type MetricsPusher interface {
 }
 
 type metricsPusher struct {
-	syncerTotal *prometheus.GaugeVec
+	syncerTotal     *prometheus.GaugeVec
+	collectorStatus customautoscalingv1alpha1.CollectorStatus
 }
 
 type PusherOption func(*metricsPusher)
