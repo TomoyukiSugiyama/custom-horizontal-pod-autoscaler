@@ -253,6 +253,8 @@ func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(
 		return ctrl.Result{}, err
 	}
 
+	collectorStatus := metricsCollector.GetStatus()
+
 	currendCustomHPA.Status = customautoscalingv1alpha1.CustomHorizontalPodAutoscalerStatus{
 		CurrentReplicas:    currentHPA.Status.CurrentReplicas,
 		DesiredReplicas:    currentHPA.Status.DesiredReplicas,
@@ -264,11 +266,12 @@ func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(
 		CurrentMetrics:     currentHPA.Status.CurrentMetrics,
 		Conditions:         currentHPA.Status.Conditions,
 		ObservedGeneration: currentHPA.Status.ObservedGeneration,
-		CollectorStatus:    metricsCollector.GetStatus(),
+		CollectorStatus:    collectorStatus,
 	}
 
 	if r.metricsPuser != nil {
 		r.metricsPuser.SetSyncerTotal(float64(len(r.syncers)))
+		r.metricsPuser.SetCollectorStatus(customHPA.Namespace, customHPA.Name, collectorStatus)
 	}
 
 	err = r.Status().Update(ctx, &currendCustomHPA)
