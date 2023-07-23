@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"net/http/httptest"
 	"time"
 
@@ -26,6 +27,8 @@ var _ = Describe("Integration test", func() {
 	var stopFunc func()
 	var fakePrometheus *httptest.Server
 	var collector metricspkg.MetricsCollector
+
+	metricPort := 13449
 
 	It("Should create HorizontalPodAutoscaler", func() {
 		customHorizontalPodAutoscaler := util.NewCustomHorizontalPodAutoscaler()
@@ -111,8 +114,9 @@ var _ = Describe("Integration test", func() {
 
 		mgr, err := ctrl.NewManager(cfg, ctrl.Options{
 			Scheme:             scheme.Scheme,
-			MetricsBindAddress: "0",
+			MetricsBindAddress: fmt.Sprintf("localhost:%d", metricPort),
 		})
+		metricPort--
 		Expect(err).NotTo(HaveOccurred())
 
 		fakePrometheus = util.NewFakePrometheusServer()
