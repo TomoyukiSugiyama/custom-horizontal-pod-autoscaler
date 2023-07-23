@@ -29,7 +29,7 @@ import (
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 )
 
-var _ = Describe("Syncer", func() {
+var _ = Describe("Metrics Collector", func() {
 	ctx := context.Background()
 	var fakePrometheus *httptest.Server
 
@@ -43,7 +43,10 @@ var _ = Describe("Syncer", func() {
 
 		go collector.Start(ctx)
 		defer collector.Stop()
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(150 * time.Millisecond)
+
+		status := collector.GetStatus()
+		Expect(status).Should(Equal(customautoscalingv1alpha1.CollectorAvailable))
 
 		res := collector.GetPersedQueryResult()
 		Expect(res[customautoscalingv1alpha1.Condition{Id: "7-21", Type: "training"}]).Should(Equal("1"))
