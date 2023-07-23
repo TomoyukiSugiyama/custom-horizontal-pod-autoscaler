@@ -21,7 +21,7 @@ import (
 	"time"
 
 	customautoscalingv1alpha1 "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/api/v1alpha1"
-	metricspkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/metrics-collector"
+	collectorpkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/metrics-collector"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
 	ctrlClient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -35,7 +35,7 @@ type Syncer interface {
 }
 
 type syncer struct {
-	metricsCollector               metricspkg.MetricsCollector
+	metricsCollector               collectorpkg.MetricsCollector
 	ctrlClient                     ctrlClient.Client
 	interval                       time.Duration
 	stopCh                         chan struct{}
@@ -47,7 +47,7 @@ var _ Syncer = (*syncer)(nil)
 
 type Option func(*syncer)
 
-func New(metricsCollector metricspkg.MetricsCollector, ctrlClient ctrlClient.Client, namespacedName types.NamespacedName, opts ...Option) (Syncer, error) {
+func New(metricsCollector collectorpkg.MetricsCollector, ctrlClient ctrlClient.Client, namespacedName types.NamespacedName, opts ...Option) (Syncer, error) {
 	s := &syncer{
 		interval:                       30 * time.Second,
 		stopCh:                         make(chan struct{}),
