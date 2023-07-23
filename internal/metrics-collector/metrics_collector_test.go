@@ -29,7 +29,7 @@ import (
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 )
 
-var _ = Describe("Syncer", func() {
+var _ = Describe("Metrics Collector", func() {
 	ctx := context.Background()
 	var fakePrometheus *httptest.Server
 
