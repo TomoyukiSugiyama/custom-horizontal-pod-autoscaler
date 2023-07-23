@@ -44,7 +44,7 @@ var _ = Describe("Metrics Pusher", func() {
 	})
 
 	It("Should get collectorNotReady", func() {
-		pusher.SetCollectorStatus("test-ns", "test-custom-hpa", customautoscalingv1alpha1.CollectorNotReady)
+		pusher.SetCollectorStatus(customautoscalingv1alpha1.CollectorNotReady)
 
 		const metadataNotReady = `
 		# HELP customhpa_collector_notready The controller status about not ready condition
@@ -52,7 +52,7 @@ var _ = Describe("Metrics Pusher", func() {
 		`
 		expectedNotReady := `
 
-		customhpa_collector_notready{controller="customhorizontalpodautoscaler",name="test-custom-hpa",namespace="test-ns"} 1
+		customhpa_collector_notready{controller="customhorizontalpodautoscaler"} 1
 		`
 		err = testutil.CollectAndCompare(pusher.GetCollectorNotReady(), strings.NewReader(metadataNotReady+expectedNotReady), "customhpa_collector_notready")
 		Expect(err).NotTo(HaveOccurred())
@@ -63,7 +63,7 @@ var _ = Describe("Metrics Pusher", func() {
 		`
 		expectedAvailable := `
 
-		customhpa_collector_available{controller="customhorizontalpodautoscaler",name="test-custom-hpa",namespace="test-ns"} 0
+		customhpa_collector_available{controller="customhorizontalpodautoscaler"} 0
 		`
 		err = testutil.CollectAndCompare(pusher.GetCollectorAvailable(), strings.NewReader(metadataAvailable+expectedAvailable), "customhpa_collector_notready")
 		Expect(err).NotTo(HaveOccurred())
@@ -71,7 +71,7 @@ var _ = Describe("Metrics Pusher", func() {
 	})
 
 	It("Should get collectorAvailable", func() {
-		pusher.SetCollectorStatus("test-ns", "test-custom-hpa", customautoscalingv1alpha1.CollectorAvailable)
+		pusher.SetCollectorStatus(customautoscalingv1alpha1.CollectorAvailable)
 
 		const metadataNotReady = `
 		# HELP customhpa_collector_notready The controller status about not ready condition
@@ -79,7 +79,7 @@ var _ = Describe("Metrics Pusher", func() {
 		`
 		expectedNotReady := `
 
-		customhpa_collector_notready{controller="customhorizontalpodautoscaler",name="test-custom-hpa",namespace="test-ns"} 0
+		customhpa_collector_notready{controller="customhorizontalpodautoscaler"} 0
 		`
 		err = testutil.CollectAndCompare(pusher.GetCollectorNotReady(), strings.NewReader(metadataNotReady+expectedNotReady), "customhpa_collector_notready")
 		Expect(err).NotTo(HaveOccurred())
@@ -90,7 +90,7 @@ var _ = Describe("Metrics Pusher", func() {
 		`
 		expectedAvailable := `
 
-		customhpa_collector_available{controller="customhorizontalpodautoscaler",name="test-custom-hpa",namespace="test-ns"} 1
+		customhpa_collector_available{controller="customhorizontalpodautoscaler"} 1
 		`
 		err = testutil.CollectAndCompare(pusher.GetCollectorAvailable(), strings.NewReader(metadataAvailable+expectedAvailable), "customhpa_collector_notready")
 		Expect(err).NotTo(HaveOccurred())
