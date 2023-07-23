@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	customautoscalingv1alpha1 "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/api/v1alpha1"
@@ -41,6 +42,8 @@ import (
 var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 	ctx := context.Background()
 	var stopFunc func()
+
+	metricPort := 13449
 
 	It("Should create HorizontalPodAutoscaler", func() {
 		customHorizontalPodAutoscaler := util.NewCustomHorizontalPodAutoscaler()
@@ -86,8 +89,9 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 
 		mgr, err := ctrl.NewManager(cfg, ctrl.Options{
 			Scheme:             scheme.Scheme,
-			MetricsBindAddress: "0",
+			MetricsBindAddress: fmt.Sprintf("localhost:%d", metricPort),
 		})
+		metricPort--
 		Expect(err).NotTo(HaveOccurred())
 
 		desiredSpec := customautoscalingv1alpha1.ConditionalReplicasSpec{

@@ -28,10 +28,7 @@ import (
 
 var _ = Describe("Metrics Pusher", func() {
 	pusher, err := NewPusher()
-	// var err error
 	It("Should get syncerTotal", func() {
-		// pusher, err := NewPusher()
-		// Expect(err).NotTo(HaveOccurred())
 		pusher.SetSyncerTotal(1)
 
 		const metadata = `
