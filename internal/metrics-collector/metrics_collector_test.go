@@ -45,11 +45,12 @@ var _ = Describe("Metrics Collector", func() {
 		defer collector.Stop()
 		time.Sleep(150 * time.Millisecond)
 
+		status := collector.GetStatus()
+		Expect(status).Should(Equal(customautoscalingv1alpha1.CollectorAvailable))
+
 		res := collector.GetPersedQueryResult()
 		Expect(res[customautoscalingv1alpha1.Condition{Id: "7-21", Type: "training"}]).Should(Equal("1"))
 
-		status := collector.GetStatus()
-		Expect(status).Should(Equal(customautoscalingv1alpha1.CollectorAvailable))
 	})
 
 	BeforeEach(func() {
