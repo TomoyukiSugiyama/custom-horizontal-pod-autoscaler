@@ -35,7 +35,7 @@ func (p *FakeMetricsPusher) SetSyncerTotal(count float64) {
 
 }
 
-func (p *FakeMetricsPusher) SetCollectorStatus(namespace string, name string, status customautoscalingv1alpha1.CollectorStatus) {
+func (p *FakeMetricsPusher) SetCollectorStatus(status customautoscalingv1alpha1.CollectorStatus) {
 
 }
 

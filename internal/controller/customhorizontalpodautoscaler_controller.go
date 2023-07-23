@@ -271,7 +271,7 @@ func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(
 
 	if r.metricsPuser != nil {
 		r.metricsPuser.SetSyncerTotal(float64(len(r.syncers)))
-		r.metricsPuser.SetCollectorStatus(customHPA.Namespace, customHPA.Name, collectorStatus)
+		r.metricsPuser.SetCollectorStatus(collectorStatus)
 	}
 
 	err = r.Status().Update(ctx, &currendCustomHPA)
