@@ -27,7 +27,7 @@ var _ = Describe("Integration test", func() {
 	var stopFunc func()
 	var fakePrometheus *httptest.Server
 	var collector metricspkg.MetricsCollector
-
+	pusher, _ := pusherpkg.NewPusher()
 	metricPort := 13449
 
 	It("Should create HorizontalPodAutoscaler", func() {
@@ -130,9 +130,7 @@ var _ = Describe("Integration test", func() {
 		go collector.Start(ctx)
 		time.Sleep(100 * time.Millisecond)
 
-		fakePusher := pusherpkg.FakeNewPusher()
-
-		reconciler := NewReconcile(k8sClient, scheme.Scheme, collector, WithSyncersInterval(50*time.Millisecond), WithMetricsPusher(fakePusher))
+		reconciler := NewReconcile(k8sClient, scheme.Scheme, collector, WithSyncersInterval(50*time.Millisecond), WithMetricsPusher(pusher))
 
 		err = reconciler.SetupWithManager(mgr)
 		Expect(err).NotTo(HaveOccurred())
