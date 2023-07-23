@@ -49,13 +49,13 @@ func NewPusher() (MetricsPusher, error) {
 		Namespace: "customhpa",
 		Name:      "collector_notready",
 		Help:      "The controller status about not ready condition",
-	}, []string{"controller", "name", "namespace"})
+	}, []string{"controller"})
 
 	p.collectorAvailable = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "customhpa",
 		Name:      "collector_available",
 		Help:      "The controller status about available condition",
-	}, []string{"controller", "name", "namespace"})
+	}, []string{"controller"})
 
 	metrics.Registry.MustRegister(p.syncerTotal, p.collectorNotReady, p.collectorAvailable)
 
