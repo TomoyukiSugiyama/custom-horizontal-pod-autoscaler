@@ -22,7 +22,7 @@ import (
 	"time"
 
 	customautoscalingv1alpha1 "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/api/v1alpha1"
-	metricspkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/metrics-collector"
+	collectorpkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/metrics-collector"
 	pusherpkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/metrics-pusher"
 	syncerpkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/syncer"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
@@ -43,7 +43,7 @@ import (
 type CustomHorizontalPodAutoscalerReconciler struct {
 	client.Client
 	Scheme           *runtime.Scheme
-	metricsCollector metricspkg.MetricsCollector
+	metricsCollector collectorpkg.MetricsCollector
 	metricsPuser     pusherpkg.MetricsPusher
 	syncers          map[types.NamespacedName]syncerpkg.Syncer
 	syncersInterval  time.Duration
@@ -59,7 +59,7 @@ type Option func(*CustomHorizontalPodAutoscalerReconciler)
 //+kubebuilder:rbac:groups=autoscaling,resources=horizontalpodautoscalers/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=autoscaling,resources=horizontalpodautoscalers/finalizers,verbs=update
 
-func NewReconcile(Client client.Client, Scheme *runtime.Scheme, metricsCollector metricspkg.MetricsCollector, opts ...Option) *CustomHorizontalPodAutoscalerReconciler {
+func NewReconcile(Client client.Client, Scheme *runtime.Scheme, metricsCollector collectorpkg.MetricsCollector, opts ...Option) *CustomHorizontalPodAutoscalerReconciler {
 
 	r := &CustomHorizontalPodAutoscalerReconciler{
 		Client:           Client,
@@ -240,7 +240,7 @@ func (r *CustomHorizontalPodAutoscalerReconciler) reconcileHorizontalPodAutoscal
 func (r *CustomHorizontalPodAutoscalerReconciler) updateStatus(
 	ctx context.Context,
 	customHPA customautoscalingv1alpha1.CustomHorizontalPodAutoscaler,
-	metricsCollector metricspkg.MetricsCollector,
+	metricsCollector collectorpkg.MetricsCollector,
 ) (ctrl.Result, error) {
 	var currendCustomHPA customautoscalingv1alpha1.CustomHorizontalPodAutoscaler
 	err := r.Get(ctx, client.ObjectKey{Namespace: customHPA.Namespace, Name: customHPA.Name}, &currendCustomHPA)

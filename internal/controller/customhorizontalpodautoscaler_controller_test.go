@@ -22,7 +22,7 @@ import (
 	"time"
 
 	customautoscalingv1alpha1 "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/api/v1alpha1"
-	metricspkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/metrics-collector"
+	collectorpkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/metrics-collector"
 	pusherpkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/metrics-pusher"
 	syncerpkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/syncer"
 	"github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/test/util"
@@ -106,7 +106,7 @@ var _ = Describe("CustomHorizontalPodAutoscaler controller", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		api := prometheusv1.NewAPI(client)
-		dummyCollector, err := metricspkg.NewCollector(api)
+		dummyCollector, err := collectorpkg.NewCollector(api)
 		Expect(err).NotTo(HaveOccurred())
 
 		fakePusher := pusherpkg.FakeNewPusher()
