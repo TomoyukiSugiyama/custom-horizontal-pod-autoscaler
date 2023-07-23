@@ -23,7 +23,7 @@ import (
 	"time"
 
 	customautoscalingv1alpha1 "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/api/v1alpha1"
-	metricspkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/metrics-collector"
+	collectorpkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/metrics-collector"
 	pusherpkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/metrics-pusher"
 	"github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/test/util"
 	. "github.com/onsi/ginkgo/v2"
@@ -42,7 +42,7 @@ var _ = Describe("Integration test", func() {
 	ctx := context.Background()
 	var stopFunc func()
 	var fakePrometheus *httptest.Server
-	var collector metricspkg.MetricsCollector
+	var collector collectorpkg.MetricsCollector
 	pusher, _ := pusherpkg.NewPusher()
 	metricPort := 13449
 
@@ -140,7 +140,7 @@ var _ = Describe("Integration test", func() {
 		client, err := prometheusapi.NewClient(prometheusapi.Config{Address: fakePrometheus.URL})
 		Expect(err).NotTo(HaveOccurred())
 		api := prometheusv1.NewAPI(client)
-		collector, err = metricspkg.NewCollector(api, metricspkg.WithMetricsCollectorInterval(50*time.Millisecond))
+		collector, err = collectorpkg.NewCollector(api, collectorpkg.WithMetricsCollectorInterval(50*time.Millisecond))
 		Expect(err).NotTo(HaveOccurred())
 
 		go collector.Start(ctx)

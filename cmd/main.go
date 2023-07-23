@@ -26,7 +26,7 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	customautoscalingv1alpha1 "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/api/v1alpha1"
 	"github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/controller"
-	metricspkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/metrics-collector"
+	collectorpkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/metrics-collector"
 	pusherpkg "github.com/TomoyukiSugiyama/custom-horizontal-pod-autoscaler/internal/metrics-pusher"
 	prometheusapi "github.com/prometheus/client_golang/api"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
@@ -106,9 +106,9 @@ func main() {
 		os.Exit(1)
 	}
 	api := prometheusv1.NewAPI(client)
-	collector, err := metricspkg.NewCollector(
+	collector, err := collectorpkg.NewCollector(
 		api,
-		metricspkg.WithMetricsCollectorInterval(*metricsCollectorInterval),
+		collectorpkg.WithMetricsCollectorInterval(*metricsCollectorInterval),
 	)
 	if err != nil {
 		setupLog.Error(err, "unable to create new metrics collector")
