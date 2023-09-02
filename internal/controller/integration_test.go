@@ -36,6 +36,7 @@ import (
 	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 )
 
 var _ = Describe("Integration test", func() {
@@ -129,8 +130,8 @@ var _ = Describe("Integration test", func() {
 		time.Sleep(100 * time.Millisecond)
 
 		mgr, err := ctrl.NewManager(cfg, ctrl.Options{
-			Scheme:             scheme.Scheme,
-			MetricsBindAddress: fmt.Sprintf("localhost:%d", metricPort),
+			Scheme:  scheme.Scheme,
+			Metrics: metricsserver.Options{BindAddress: fmt.Sprintf("localhost:%d", metricPort)},
 		})
 		metricPort--
 		Expect(err).NotTo(HaveOccurred())
